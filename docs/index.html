@@ -348,19 +348,37 @@
 		.subagent-workers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 		.subagent-worker { display: grid; min-height: 96px; place-items: center; padding: 10px 6px; border: 2px solid var(--ink); background: var(--white); text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 0.38em; font-weight: 600; line-height: 1.25; }
 		.subagent-result { margin: 25px 0 0 !important; text-align: center; font-size: 0.68em !important; font-weight: 700; }
-		.subagent-entry-paths { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 26px; margin-top: 24px; }
-		.subagent-entry { min-width: 0; padding: 20px 22px; border: 3px solid var(--ink); background: var(--white); }
-		.subagent-entry.built-in { border-top: 14px solid var(--blue); }
-		.subagent-entry.prompted { border-top: 14px solid var(--lime); }
-		.subagent-entry .tag { margin-bottom: 14px; }
-		.subagent-command { display: block; margin: 8px 0 16px; font-family: 'IBM Plex Mono', monospace; font-size: 1.05em; font-weight: 700; }
-		.subagent-entry > p { margin: 0; color: var(--muted); font-size: 0.5em; line-height: 1.35; }
-		.subagent-command-flow { display: grid; grid-template-columns: 1fr 34px 1.2fr 34px 1fr; align-items: center; margin-top: 25px; }
-		.subagent-command-flow span { padding: 10px 6px; border: 2px solid var(--ink); background: #f1f1ed; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 0.34em; font-weight: 600; }
-		.subagent-command-flow b { text-align: center; font-size: 0.7em; }
-		.reveal .subagent-entry.prompted pre { margin-top: 3px; padding: 15px 17px; box-shadow: none; }
-		.reveal .subagent-entry.prompted pre code { min-height: 0; font-size: 0.56em; line-height: 1.3; }
-		.subagent-entry-claim { margin: 22px 0 0 !important; text-align: center; font-size: 0.66em !important; font-weight: 700; }
+		.subagent-review-evidence { display: grid; gap: 9px; margin-top: 12px; }
+		.subagent-review-shot { margin: 0; }
+		.subagent-review-shot figcaption { margin-bottom: 5px; font-size: 0.72em; font-weight: 700; }
+		.reveal .subagent-review-shot img { display: block; width: 900px; max-width: none; height: auto; max-height: none; margin: 0; border: 3px solid var(--ink); background: var(--white); box-shadow: 6px 6px 0 var(--ink); }
+		.reveal .subagent-review-shot.prompt img { height: 142px; object-fit: cover; object-position: center 48%; }
+		.reveal .subagent-review-shot.result img { height: 278px; object-fit: contain; }
+		.subagent-fleet-stack { display: grid; gap: 7px; width: 900px; margin-top: 12px; }
+		.subagent-fleet-shot { display: block; margin: 0; }
+		.subagent-fleet-shot.running, .subagent-fleet-shot.result { display: none; }
+		.subagent-fleet-stack:has(.progress-trigger.visible) .subagent-fleet-shot.running,
+		.subagent-fleet-stack:has(.result-trigger.visible) .subagent-fleet-shot.result { display: block; }
+		.fleet-trigger { position: absolute; width: 0; height: 0; overflow: hidden; }
+		.subagent-fleet-shot figcaption { margin-bottom: 5px; font-size: 0.64em; font-weight: 700; }
+		.reveal .subagent-fleet-shot img { display: block; width: 900px; max-width: none; height: auto; max-height: none; margin: 0; border: 3px solid var(--ink); background: var(--white); box-shadow: 5px 5px 0 var(--ink); object-fit: cover; transition: height 350ms ease; }
+		.subagent-fleet-stack:has(.progress-trigger.visible) .prompt img { height: 145px; object-position: center 48%; }
+		.subagent-fleet-stack:has(.progress-trigger.visible) .running img { height: auto; }
+		.subagent-fleet-stack:has(.result-trigger.visible) .prompt img { height: 100px; object-position: center top; }
+		.subagent-fleet-stack:has(.result-trigger.visible) .running img { height: 175px; object-position: center top; }
+		.subagent-fleet-stack:has(.result-trigger.visible) .result img { height: auto; }
+		.subagent-prompt-intro { margin: 8px 0 0 !important; font-size: 0.58em !important; }
+		.subagent-prompt-layout { display: grid; grid-template-columns: 1fr 270px; gap: 24px; align-items: stretch; margin-top: 10px; }
+		.subagent-prompt-box { margin: 0; padding: 22px 24px; border: 3px solid var(--ink); border-left: 12px solid var(--blue); background: var(--white); box-shadow: 7px 7px 0 var(--ink); white-space: pre-wrap; font-family: 'IBM Plex Mono', monospace; font-size: 0.43em; line-height: 1.45; }
+		.subagent-agent-flow { display: flex; flex-direction: column; justify-content: center; gap: 7px; }
+		.subagent-agent-flow h3 { margin: 0 0 5px; font-family: 'IBM Plex Mono', monospace; font-size: 0.4em; text-align: center; text-transform: uppercase; }
+		.subagent-research-agents { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+		.subagent-agent-box { display: grid; place-items: center; min-height: 58px; box-sizing: border-box; padding: 7px 5px; border: 3px solid var(--ink); background: var(--white); text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 0.35em; font-weight: 700; line-height: 1.15; }
+		.subagent-research-agents .subagent-agent-box { border-top: 9px solid var(--coral); }
+		.subagent-agent-box.parent { min-height: 72px; border-left: 10px solid var(--blue); font-size: 0.42em; }
+		.subagent-agent-box.qa { min-height: 72px; border-left: 10px solid var(--lime); font-size: 0.42em; }
+		.subagent-agent-box span { display: block; margin-top: 4px; color: var(--muted); font-size: 0.86em; font-weight: 500; }
+		.subagent-agent-arrow { height: 28px; text-align: center; font-size: 0.9em; font-weight: 700; line-height: 28px; }
 		.delegation-map { display: grid; grid-template-columns: 310px 90px 1fr; gap: 18px; align-items: center; margin-top: 24px; }
 		.delegation-parent { padding: 26px 22px; border: 3px solid var(--ink); background: var(--lime); }
 		.delegation-parent .tag { margin-bottom: 18px; }
@@ -889,7 +907,7 @@ child_env["AZURE_ENV_NAME"] = environment</code></pre>
 				<section>
 					<p class="kicker">Agent monitoring</p>
 					<h2>Customize agent notifications with hooks</h2>
-					<p class="setup-intro">VS Code agent hooks can run a command when an agent lifecycle event occurs.</p>
+					<p class="setup-intro">Hooks run commands across VS Code, Copilot CLI, and Copilot coding agent sessions.</p>
 					<div class="worktree-setup-example hooks-example">
 						<div class="setup-prompt hook-config">
 							<span class="tag">HOOK CONFIG</span>
@@ -918,8 +936,8 @@ idle_ns=$(
 /usr/bin/say "${title:-Agent finished}"</code></pre>
 						</div>
 					</div>
-					<p class="source-note"><a href="https://gist.github.com/pamelafox/c9cb3e000fdf127741b121d7c5abbf02" target="_blank" rel="noopener noreferrer">&#x1F517; Full agent completion hook</a> &nbsp; <a href="https://vscode.club/docs/agent-customization/hooks" target="_blank" rel="noopener noreferrer">&#x1F517; Agent hooks documentation</a></p>
-					<aside class="notes">Built-in notifications may be enough, but hooks let you route agent lifecycle events through your own commands. This Stop hook invokes a zsh script when the agent finishes. The full script plays a completion sound, checks whether the machine has been idle for at least a minute, finds the session title, and speaks that title aloud. The snippet abbreviates the idle-time and title lookup helpers; the link contains the complete implementation.</aside>
+					<p class="source-note"><a href="https://gist.github.com/pamelafox/c9cb3e000fdf127741b121d7c5abbf02" target="_blank" rel="noopener noreferrer">&#x1F517; Full agent completion hook</a> &nbsp; <a href="https://vscode.club/docs/agent-customization/hooks" target="_blank" rel="noopener noreferrer">&#x1F517; VS Code hooks documentation</a> &nbsp; <a href="https://awesome-copilot.github.com/learning-hub/automating-with-hooks/" target="_blank" rel="noopener noreferrer">&#x1F517; Automating with hooks</a></p>
+					<aside class="notes">Built-in notifications may be enough, but hooks let you route agent lifecycle events through your own commands in VS Code, Copilot CLI, and Copilot coding agent sessions. This Stop hook invokes a zsh script when the agent finishes. The full script plays a completion sound, checks whether the machine has been idle for at least a minute, finds the session title, and speaks that title aloud. The snippet abbreviates the idle-time and title lookup helpers; the links contain the complete implementation and cross-product guidance.</aside>
 				</section>
 
 				<section>
@@ -1085,28 +1103,77 @@ Do not invent missing details.
 
 				<section>
 					<p class="kicker">Subagents</p>
-					<h2>Invoke subagents with commands or prompts</h2>
-					<div class="subagent-entry-paths">
-						<div class="subagent-entry built-in">
-							<span class="tag">COPILOT APP + CLI</span>
-							<code class="subagent-command">/review</code>
-							<p>A built-in command can delegate review concerns to subagents and combine their findings.</p>
-							<div class="subagent-command-flow"><span>CODE CHANGE</span><b>&rarr;</b><span>PARALLEL REVIEWERS</span><b>&rarr;</b><span>ONE REVIEW</span></div>
-						</div>
-						<div class="subagent-entry prompted">
-							<span class="tag">YOUR PROMPT</span>
-							<pre><code class="language-text" data-trim>Review this change with subagents.
+					<h2>Use /review to launch reviewer subagents</h2>
+					<div class="subagent-review-evidence">
+						<figure class="subagent-review-shot prompt">
+							<figcaption>1 &middot; Ask for independent perspectives</figcaption>
+							<img src="assets/screenshot_subagents_review_prompt.png" alt="Copilot review prompt requesting reviews from three different models">
+						</figure>
+						<figure class="subagent-review-shot result">
+							<figcaption>2 &middot; Parallel reviews, synthesized result</figcaption>
+							<img src="assets/screenshot_subagents_review_result.png" alt="Copilot showing three completed code review subagents followed by a consensus finding">
+						</figure>
+					</div>
+					<aside class="notes">The review command is a practical subagent scenario because each reviewer can inspect the same pull request independently. Here the prompt requests three models. Copilot launches three code-review subagents, waits for their results, identifies where they agree, and continues from that synthesized finding. The parent remains the interface: we ask once and receive one coordinated response.</aside>
+				</section>
 
-Run independent reviews for:
-- correctness and edge cases
-- tests and coverage
-- security and performance
+				<section>
+					<p class="kicker">Subagents</p>
+					<h2>Use /fleet to run independent work</h2>
+					<div class="subagent-fleet-stack">
+						<span class="fleet-trigger progress-trigger fragment" data-fragment-index="0" aria-hidden="true"></span>
+						<span class="fleet-trigger result-trigger fragment" data-fragment-index="1" aria-hidden="true"></span>
+						<figure class="subagent-fleet-shot prompt">
+							<figcaption>1 &middot; Give each subagent a clear boundary</figcaption>
+							<img src="assets/screenshot_subagents_fleet_prompt.png" alt="Copilot fleet prompt assigning independent audits of the README, manual test script, and environment sample">
+						</figure>
+						<figure class="subagent-fleet-shot running">
+							<figcaption>2 &middot; Three subagents run in parallel</figcaption>
+							<img src="assets/screenshot_subagents_fleet_progress.png" alt="Copilot showing three file-scoped audit subagents running in parallel">
+						</figure>
+						<figure class="subagent-fleet-shot result">
+							<figcaption>3 &middot; One validated summary returns</figcaption>
+							<img src="assets/screenshot_subagents_fleet_result.png?v=3" alt="Copilot fleet validation results across all three audits">
+						</figure>
+					</div>
+					<aside class="notes">Fleet works best when the parent can divide the goal among independent subagents. Here, each subagent owns a different developer entry point: the README, the manual test matrix, or the environment sample. The parent dispatches all three concurrently, checks the combined repository state, and reports one validated result. Explicit file boundaries prevent overlapping edits while integration remains the parent's responsibility.</aside>
+				</section>
 
-Return one prioritized report.</code></pre>
+				<section>
+					<p class="kicker">Subagents</p>
+					<h2>Prompt Copilot to use subagents for any workflow</h2>
+					<p class="subagent-prompt-intro">For example, this prompt fans out research, then verifies independently.</p>
+					<div class="subagent-prompt-layout">
+						<pre class="subagent-prompt-box">Add support for a new model provider to this sample repo.
+
+Before editing, <strong>fan out research</strong> to three read-only
+subagents in parallel:
+- <strong>Integration mapper:</strong> trace configuration and authentication.
+- <strong>Compatibility analyst:</strong> find provider-specific risks.
+- <strong>Test strategist:</strong> define the required validation matrix.
+
+Synthesize their findings, then implement the smallest change.
+
+Then ask a <strong>QA subagent with fresh context</strong> to verify the
+existing providers still work, the new path is covered, and
+the docs and manual test matrix agree.
+
+Fix confirmed failures and report the validation evidence.</pre>
+						<div class="subagent-agent-flow" aria-label="Three research subagents report to the parent agent, followed by one QA subagent">
+							<h3>Research &middot; 3 subagents</h3>
+							<div class="subagent-research-agents">
+								<div class="subagent-agent-box">Subagent 1<span>Config map</span></div>
+								<div class="subagent-agent-box">Subagent 2<span>Provider risks</span></div>
+								<div class="subagent-agent-box">Subagent 3<span>Test matrix</span></div>
+							</div>
+							<div class="subagent-agent-arrow" aria-hidden="true">&#x2193;</div>
+							<div class="subagent-agent-box parent">Implement<span>Parent agent</span></div>
+							<div class="subagent-agent-arrow" aria-hidden="true">&#x2193;</div>
+							<div class="subagent-agent-box qa">QA<span>1 subagent &middot; fresh context</span></div>
 						</div>
 					</div>
-					<p class="subagent-entry-claim">Use a built-in operation, or ask the parent agent to delegate explicitly.</p>
-					<aside class="notes">You do not always need to orchestrate subagents yourself. In Copilot App and Copilot CLI, built-in commands such as slash review can use subagents to inspect different concerns in parallel and consolidate the findings. You can also ask for delegation explicitly in the prompt: name independent review concerns, request parallel work, and ask the parent agent to return one prioritized report. In both cases, you interact with the parent agent rather than managing each subagent individually.</aside>
+					<p class="source-note"><a href="https://awesome-copilot.github.com/learning-hub/agents-and-subagents/" target="_blank" rel="noopener noreferrer">&#x1F517; Agents and Subagents guide</a></p>
+					<aside class="notes">This combines parallelism with staged handoffs. Three read-only specialists investigate different concerns at the same time, without the shared-file risk of parallel implementation. The parent synthesizes those findings and owns the code change. A QA subagent then receives fresh context and independently challenges the result. This pattern is inspired by the specialized SWE and QA subagents and Builder/Inspector workflows in awesome-copilot.</aside>
 				</section>
 
 				<section>
@@ -1125,7 +1192,7 @@ Return one prioritized report.</code></pre>
 							<div class="delegation-worker new"><span class="session-kind">NEW SESSION</span><strong>docs</strong><span>Update the guide</span></div>
 						</div>
 					</div>
-					<p class="delegation-claim">The parent coordinates the goal; delegated workers can own separate context, execution, and repositories.</p>
+					<p class="delegation-claim">The parent coordinates the goal; delegated subagents can own separate context, execution, and repositories.</p>
 					<aside class="notes">Delegation does not have to stay inside one context or repository. A parent session can ask a subagent to inspect work within the current session, or start delegated work in a separate session with its own context. That new session can target another repository, such as a shared SDK or documentation project. The parent remains responsible for coordinating the overall goal and integrating the returned results. This diagram is intentionally generic and can later be replaced with product screenshots.</aside>
 				</section>
 
