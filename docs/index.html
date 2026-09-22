@@ -1,0 +1,1199 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Parallelize Your Development with GitHub Copilot</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.1.0/dist/reset.css">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.1.0/dist/reveal.css">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.1.0/dist/theme/simple.css" id="theme">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/a11y-light.min.css">
+		<style>
+		:root {
+			--ink: #171717;
+			--muted: #5c5c58;
+			--paper: #f7f7f2;
+			--white: #ffffff;
+			--line: #c9c9c1;
+			--lime: #b7f34a;
+			--blue: #4a7df3;
+			--coral: #f36f56;
+			--yellow: #ffd65a;
+		}
+
+		.reveal {
+			background-color: var(--paper);
+			background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+			background-size: 48px 48px;
+			font-family: 'Space Grotesk', sans-serif;
+			color: var(--ink);
+		}
+
+		.reveal::before {
+			content: "";
+			position: fixed;
+			inset: 0;
+			background: rgba(247, 247, 242, 0.9);
+			pointer-events: none;
+		}
+
+		.reveal .slides section {
+			box-sizing: border-box;
+			text-align: left;
+			padding: 46px 64px;
+		}
+
+		.reveal h1,
+		.reveal h2,
+		.reveal h3 {
+			font-family: 'Space Grotesk', sans-serif;
+			color: var(--ink);
+			text-transform: none;
+			letter-spacing: 0;
+			font-weight: 700;
+			text-shadow: none;
+		}
+
+		.reveal h1 { font-size: 2.15em; line-height: 1.02; }
+		.reveal h2 { font-size: 1.55em; line-height: 1.08; margin-bottom: 0.45em; }
+		.reveal h3 { font-size: 1.22em; line-height: 1.1; }
+		.reveal .slides section > h2 { font-size: 1.2em; white-space: nowrap; }
+		.reveal .slides section > h2.long-title { font-size: 0.95em; }
+		.reveal p,
+		.reveal li,
+		.reveal td,
+		.reveal th { font-size: 0.82em; line-height: 1.38; }
+		.reveal strong { color: var(--ink); }
+		.reveal ul, .reveal ol { margin-left: 1em; }
+		.reveal li { margin-bottom: 0.32em; }
+		.reveal a { color: #244fba; text-decoration-thickness: 2px; }
+		.reveal .slide-number { color: var(--ink); background: transparent; font-family: 'IBM Plex Mono', monospace; }
+		.reveal .progress { color: var(--blue); height: 5px; }
+
+		.kicker,
+		.mono {
+			font-family: 'IBM Plex Mono', monospace;
+			font-size: 0.54em;
+			font-weight: 600;
+			letter-spacing: 0;
+			text-transform: uppercase;
+		}
+
+		.kicker { display: inline-block; border-bottom: 4px solid var(--lime); padding-bottom: 6px; margin-bottom: 22px; }
+		.big-claim { font-size: 1.48em !important; line-height: 1.18 !important; max-width: 980px; }
+		.lead { font-size: 0.92em !important; max-width: 950px; color: var(--muted); }
+		.muted { color: var(--muted); }
+		.accent { background: var(--lime); padding: 0 0.12em; }
+
+		.title-slide { display: grid !important; grid-template-columns: 1fr 400px; gap: 48px; align-items: center; height: 100%; }
+		.title-slide h1 { margin: 0.16em 0 0.25em; max-width: 760px; font-size: 1.9em; }
+		.title-lockup { display: block; width: 510px; max-width: 100%; height: auto; margin-top: 22px; }
+		.title-slide .author { margin: 1.2em 0 0.2em; font-weight: 700; }
+		.title-slide .mono { margin-top: 0; }
+		.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+		.parallel-viz { position: relative; min-height: 238px; }
+		.copilot-node { position: relative; z-index: 2; display: grid; place-items: center; width: 56px; height: 56px; border: 3px solid var(--ink); border-radius: 50%; background: var(--packet-color); }
+		.copilot-node::after { content: ""; position: absolute; left: 100%; top: 50%; width: 17px; border-top: 3px solid var(--ink); transform: translateY(-50%); }
+		.reveal .copilot-viz-icon { display: block; width: 40px; height: 40px; margin: 0; }
+		.parallel-lanes { display: grid; gap: 26px; }
+		.parallel-lane { display: grid; grid-template-columns: 60px 1fr 24px; align-items: center; gap: 10px; }
+		.parallel-track { position: relative; height: 54px; overflow: hidden; border: 3px solid var(--ink); background: var(--white); }
+		.parallel-track::before { content: ""; position: absolute; left: 12px; right: 12px; top: 50%; border-top: 3px dashed var(--line); transform: translateY(-50%); }
+		.work-packet { position: absolute; left: 7px; top: 7px; width: 76px; height: 34px; border: 2px solid var(--ink); background-color: var(--packet-color); background-image: linear-gradient(var(--ink), var(--ink)), linear-gradient(var(--ink), var(--ink)); background-position: 12px 9px, 12px 20px; background-repeat: no-repeat; background-size: 48px 3px, 32px 3px; animation: work-flow 3s cubic-bezier(0.45, 0, 0.55, 1) infinite; animation-delay: var(--delay); }
+		.parallel-end { position: relative; z-index: 1; width: 18px; height: 18px; border: 3px solid var(--ink); border-radius: 50%; background: var(--packet-color); animation: endpoint-pulse 3s ease-in-out infinite; animation-delay: calc(var(--delay) + 2.15s); }
+		@keyframes work-flow {
+			0% { transform: translateX(-92px); opacity: 0; }
+			12% { opacity: 1; }
+			72% { transform: translateX(172px); opacity: 1; }
+			82%, 100% { transform: translateX(172px); opacity: 0; }
+		}
+		@keyframes endpoint-pulse {
+			0%, 65%, 100% { transform: scale(1); }
+			74% { transform: scale(1.45); }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.work-packet { animation: none; transform: translateX(132px); opacity: 1; }
+			.parallel-end { animation: none; }
+		}
+		.about-layout { display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 52px; align-items: center; }
+		.about-photo { width: 100%; max-height: 500px; object-fit: cover; border: 3px solid var(--ink); box-shadow: 9px 9px 0 var(--lime); }
+		.about-role { font-size: 1em !important; font-weight: 700; margin-bottom: 0.45em; }
+		.about-history { color: var(--muted); margin-top: 0; }
+		.about-links { width: 100%; margin-top: 28px; border-collapse: collapse; }
+		.about-links td { padding: 8px 12px; border-bottom: 2px solid var(--line); font-size: 0.58em; }
+		.about-links td:first-child { width: 120px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+
+		.reveal section.heading-only {
+			display: flex !important;
+			flex-direction: column;
+			justify-content: center;
+			height: 100%;
+			padding: 72px 110px;
+			background: var(--ink);
+			color: var(--paper);
+		}
+		.reveal section.heading-only h2,
+		.reveal section.heading-only p { color: var(--paper); max-width: 980px; }
+		.reveal section.heading-only h2::after { content: ""; display: block; width: 110px; height: 8px; margin-top: 22px; background: var(--lime); }
+
+		.lanes { display: grid; gap: 13px; margin-top: 28px; }
+		.lane { display: grid; grid-template-columns: 170px 1fr; align-items: center; gap: 18px; }
+		.lane-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.52em; font-weight: 600; }
+		.track { height: 58px; border: 2px solid var(--ink); background: var(--white); display: flex; align-items: center; padding: 0 14px; gap: 10px; }
+		.task { display: inline-block; padding: 7px 12px; border: 2px solid var(--ink); background: var(--yellow); font-size: 0.55em; font-weight: 700; white-space: nowrap; }
+		.task.blue { background: #dbe5ff; }
+		.task.green { background: #e5ffc0; }
+		.task.coral { background: #ffe0da; }
+		.wait { height: 2px; flex: 1; border-top: 3px dashed var(--line); }
+		.lane.queued { opacity: 0.42; }
+		.supervisor-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 24px; padding: 14px 18px; border: 3px solid var(--ink); background: var(--ink); color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 0.5em; font-weight: 600; }
+		.supervisor-bar span:not(:last-child)::after { content: "\2192"; margin-left: 18px; color: var(--lime); }
+		.source-note { margin-top: 18px; font-size: 0.5em !important; color: var(--muted); }
+		.supervision-slide h2 { font-size: 1.35em; margin-bottom: 0.3em; }
+		.supervision-slide .lanes { gap: 9px; margin-top: 14px; }
+		.supervision-slide .track { height: 50px; }
+		.supervision-slide .supervisor-bar { margin-top: 14px; padding: 11px 16px; }
+		.supervision-slide .source-note { margin-top: 10px; }
+
+		.grid-2, .grid-3, .grid-4 { display: grid; gap: 18px; }
+		.grid-2 { grid-template-columns: repeat(2, 1fr); }
+		.grid-3 { grid-template-columns: repeat(3, 1fr); }
+		.grid-4 { grid-template-columns: repeat(4, 1fr); }
+		.card { border: 2px solid var(--ink); background: var(--white); padding: 20px; box-shadow: 7px 7px 0 var(--ink); }
+		.card h3 { margin: 0 0 10px; font-size: 0.9em; }
+		.card p, .card li { font-size: 0.66em; }
+		.card p:last-child { margin-bottom: 0; }
+		.card .tag { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 0.42em; padding: 5px 8px; margin-bottom: 15px; border: 2px solid var(--ink); background: var(--lime); }
+		.questions-layout { margin-top: 44px; }
+		.questions-layout .about-links { margin-top: 0; }
+		.slides-card { margin-top: 34px; }
+		.slides-card p { font-size: 0.72em; }
+
+		.matrix { width: 100%; border-collapse: collapse; background: var(--white); }
+		.matrix th, .matrix td { border: 2px solid var(--ink); padding: 13px 16px; vertical-align: top; font-size: 0.62em; }
+		.matrix th { background: var(--ink); color: var(--white); font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+		.matrix tr:nth-child(even) td { background: #efefe9; }
+
+		.scale { display: grid; grid-template-columns: repeat(4, 1fr); border: 3px solid var(--ink); margin: 30px 0 22px; }
+		.scale > div { min-height: 165px; padding: 18px; border-right: 2px solid var(--ink); background: var(--white); }
+		.scale > div:last-child { border-right: 0; }
+		.scale > div:nth-child(1) { border-top: 14px solid var(--coral); }
+		.scale > div:nth-child(2) { border-top: 14px solid var(--yellow); }
+
+		.human-loop { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 54px; }
+		.human-stage { position: relative; text-align: center; }
+		.human-stage::before { content: ""; position: absolute; top: 76px; left: 0; width: 100%; border-top: 4px solid var(--ink); }
+		.human-stage:first-child::before { left: 50%; width: 50%; }
+		.human-stage:last-child::before { width: 50%; }
+		.human-stage:not(:last-child)::after { content: ""; position: absolute; z-index: 2; top: 69px; right: -7px; width: 0; height: 0; border-top: 9px solid transparent; border-bottom: 9px solid transparent; border-left: 13px solid var(--ink); }
+		.stage-name { margin: 0 0 64px; font-family: 'IBM Plex Mono', monospace; font-size: 0.62em !important; font-weight: 600; text-transform: uppercase; }
+		.stage-marker { position: absolute; z-index: 1; top: 64px; left: 50%; width: 22px; height: 22px; border: 4px solid var(--ink); border-radius: 50%; background: var(--stage-color); transform: translateX(-50%); }
+		.human-action { min-height: 116px; margin: 0 16px; padding: 20px 12px 14px; border: 2px solid var(--ink); background: var(--white); box-shadow: 6px 6px 0 var(--ink); }
+		.human-action strong { display: block; margin-bottom: 8px; font-size: 0.76em; }
+		.human-action span { display: block; color: var(--muted); font-size: 0.58em; line-height: 1.3; }
+		.surface-spectrum { margin-top: 28px; }
+		.surface-axis { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 0.46em; font-weight: 600; text-transform: uppercase; }
+		.surface-axis-line { position: relative; flex: 1; border-top: 4px solid var(--ink); }
+		.surface-axis-line::after { content: ""; position: absolute; top: -10px; right: -1px; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-left: 13px solid var(--ink); }
+		.surface-levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+		.surface-level { min-height: 245px; padding: 20px; border: 3px solid var(--ink); background: var(--white); box-shadow: 7px 7px 0 var(--ink); }
+		.surface-level:nth-child(1) { border-top: 14px solid var(--coral); }
+		.surface-level:nth-child(2) { border-top: 14px solid var(--yellow); }
+		.surface-level:nth-child(3) { border-top: 14px solid var(--lime); }
+		.surface-level .tag { display: inline-block; margin-bottom: 16px; font-family: 'IBM Plex Mono', monospace; font-size: 0.42em; font-weight: 600; text-transform: uppercase; }
+		.surface-level h3 { margin: 0 0 14px; font-size: 0.82em; }
+		.surface-products { display: grid; align-content: start; gap: 10px; min-height: 76px; margin: 0 0 16px; font-size: 0.68em; font-weight: 700; line-height: 1.25; }
+		.surface-products span { display: block; }
+		.surface-description { margin: 0; color: var(--muted); font-size: 0.58em !important; }
+		.surface-detail { display: grid; grid-template-columns: 320px 1fr; gap: 30px; align-items: stretch; margin-top: 28px; }
+		.surface-identity { display: flex; flex-direction: column; justify-content: space-between; min-height: 330px; padding: 26px; border: 3px solid var(--ink); background: var(--surface-color); box-shadow: 8px 8px 0 var(--ink); }
+		.surface-identity .surface-index { font-family: 'IBM Plex Mono', monospace; font-size: 0.52em; font-weight: 600; text-transform: uppercase; }
+		.surface-identity .surface-mark { font-family: 'IBM Plex Mono', monospace; font-size: 2.3em; font-weight: 600; line-height: 1; }
+		.surface-identity .surface-mode { margin: 0; font-size: 0.62em; font-weight: 700; }
+		.surface-facts { display: grid; grid-template-rows: repeat(3, 1fr); border: 3px solid var(--ink); background: var(--white); }
+		.surface-fact { display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 20px; padding: 18px 22px; border-bottom: 2px solid var(--ink); }
+		.surface-fact:last-child { border-bottom: 0; }
+		.surface-fact strong { font-family: 'IBM Plex Mono', monospace; font-size: 0.48em; text-transform: uppercase; }
+		.surface-fact span { font-size: 0.66em; line-height: 1.35; }
+		.surface-showcase { display: grid; gap: 18px; margin-top: 18px; }
+		.reveal .surface-screenshot { display: block; width: 100%; max-width: none; height: 430px; max-height: none; margin: 0; border: 3px solid var(--ink); object-fit: cover; object-position: left top; box-shadow: 8px 8px 0 var(--ink); }
+		.reveal .surface-screenshot.cloud-screenshot { object-fit: contain; object-position: center; background: var(--white); }
+		.cloud-slide .surface-showcase { gap: 12px; }
+		.reveal .cloud-slide .surface-screenshot { height: 465px; }
+		.cloud-slide .surface-point { min-height: 52px; padding-top: 7px; padding-bottom: 7px; }
+		.surface-points { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+		.surface-point { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 10px 18px; border: 3px solid var(--ink); background: var(--white); }
+		.surface-point:first-child { border-left: 12px solid var(--coral); }
+		.surface-point:last-child { border-left: 12px solid var(--blue); }
+		.surface-point strong { flex: 0 0 150px; font-size: 0.68em; }
+		.surface-point span { color: var(--muted); font-size: 0.52em; line-height: 1.3; }
+		.collision-map { isolation: isolate; display: grid; grid-template-columns: 0.78fr 120px 1.15fr; align-items: center; gap: 0; margin-top: 28px; }
+		.agent-stack { position: relative; z-index: 1; display: grid; gap: 18px; }
+		.agent-lane { display: flex; align-items: center; gap: 14px; height: 62px; padding: 0 20px; border: 3px solid var(--ink); background: var(--agent-color); font-family: 'IBM Plex Mono', monospace; font-size: 0.58em; font-weight: 600; box-shadow: 6px 6px 0 var(--ink); }
+		.reveal .agent-lane-icon { display: block; width: 38px; max-width: none; height: 38px; max-height: none; margin: 0; }
+		.collision-paths { position: relative; z-index: 3; display: grid; grid-template-rows: repeat(3, 80px); align-items: center; overflow: visible; }
+		.collision-path { position: relative; z-index: 3; border-top: 4px solid var(--ink); }
+		.collision-path::before { content: ""; position: absolute; z-index: 4; top: -9px; left: 0; width: 14px; height: 14px; border: 3px solid var(--ink); border-radius: 50%; background: var(--coral); animation: collision-marker 3.2s ease-in-out infinite; }
+		.collision-path::after { content: ""; position: absolute; top: -10px; right: -1px; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-left: 13px solid var(--ink); }
+		.shared-machine { position: relative; z-index: 2; padding: 20px 22px; border: 4px solid var(--ink); background: var(--white); box-shadow: 9px 9px 0 var(--coral); animation: impact-shake 3.2s ease-in-out infinite; }
+		.shared-machine::before { content: "COLLISION"; position: absolute; top: -17px; right: 18px; padding: 5px 10px; border: 3px solid var(--ink); background: var(--coral); font-family: 'IBM Plex Mono', monospace; font-size: 0.4em; font-weight: 600; transform: rotate(2deg); }
+		.shared-machine h3 { margin: 0 0 14px; font-size: 0.82em; }
+		.collision-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+		.collision-item { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 2px solid var(--ink); background: #fff1ee; font-family: 'IBM Plex Mono', monospace; font-size: 0.46em; font-weight: 600; }
+		.collision-item span:last-child { color: #a32020; }
+		.collision-takeaway { margin-top: 28px; font-size: 0.72em !important; font-weight: 600; white-space: nowrap; }
+		.staging-map { grid-template-columns: 0.78fr 120px 1.15fr; }
+		.staging-map .agent-stack { gap: 28px; }
+		.staging-map .collision-paths { grid-template-rows: repeat(2, 92px); }
+		.staging-map .shared-machine { padding-top: 26px; padding-bottom: 26px; }
+		.staging-map .collision-list { grid-template-columns: 1fr; }
+		@keyframes collision-marker { 0%, 18% { left: 0; opacity: 0; } 24% { opacity: 1; } 66%, 76% { left: calc(100% - 14px); opacity: 1; } 82%, 100% { left: calc(100% - 14px); opacity: 0; } }
+		@keyframes impact-shake { 0%, 64%, 82%, 100% { transform: translateX(0) rotate(0); } 67% { transform: translateX(7px) rotate(0.6deg); } 70% { transform: translateX(-6px) rotate(-0.5deg); } 73% { transform: translateX(4px) rotate(0.3deg); } 76% { transform: translateX(-2px) rotate(-0.2deg); } }
+		@keyframes collision-pulse { 0%, 64%, 82%, 100% { transform: rotate(2deg) scale(1); background: var(--coral); } 70%, 76% { transform: rotate(2deg) scale(1.12); background: var(--yellow); } }
+		.shared-machine::before { animation: collision-pulse 3.2s ease-in-out infinite; }
+		@media (prefers-reduced-motion: reduce) { .collision-path::before, .shared-machine, .shared-machine::before { animation: none; } }
+		.scale > div:nth-child(3) { border-top: 14px solid var(--blue); }
+		.scale > div:nth-child(4) { border-top: 14px solid var(--lime); }
+		.scale h3 { font-size: 0.76em; }
+		.scale p { font-size: 0.58em; }
+
+		.flow { display: flex; align-items: stretch; gap: 12px; margin-top: 30px; }
+		.flow-step { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 105px; padding: 12px; text-align: center; border: 3px solid var(--ink); background: var(--white); font-size: 0.66em; font-weight: 700; }
+		.flow-step.active { background: var(--lime); }
+		.arrow { align-self: center; font-size: 1.2em; font-weight: 700; }
+		.staging-flow { margin-top: 34px; }
+		.staging-flow .flow-step { box-sizing: border-box; min-height: 190px; padding: 16px 12px; flex-direction: column; align-items: flex-start; justify-content: flex-start; text-align: left; }
+		.staging-flow .flow-step:first-child { background: var(--lime); }
+		.staging-flow .flow-step.optional { border-style: dashed; }
+		.staging-flow .step-label { margin-bottom: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 0.68em; font-weight: 600; }
+		.staging-flow h3 { margin: 0 0 12px; font-size: 1em; line-height: 1.12; }
+		.staging-flow p { margin: 0; font-size: 0.72em; font-weight: 500; line-height: 1.25; }
+		.staging-flow code { font-size: 0.94em; overflow-wrap: anywhere; }
+
+		.worktrees { display: grid; grid-template-columns: 0.72fr 1.15fr 1.15fr; gap: 18px; align-items: stretch; margin-top: 26px; }
+		.repo, .tree { border: 3px solid var(--ink); padding: 18px; background: var(--white); }
+		.repo { background: var(--ink); color: var(--white); }
+		.tree h3 { font-size: 0.78em; margin: 0 0 13px; }
+		.repo h3 { margin: 0 0 13px; color: var(--white); font-size: 0.78em; }
+		.folder-label { display: inline-block; margin-bottom: 10px; padding: 3px 7px; border: 2px solid currentColor; font-family: 'IBM Plex Mono', monospace; font-size: 0.36em; font-weight: 600; }
+		.folder-path { min-height: 54px; font-family: 'IBM Plex Mono', monospace; font-size: 0.43em; line-height: 1.35; overflow-wrap: anywhere; }
+		.config { font-family: 'IBM Plex Mono', monospace; font-size: 0.48em; padding: 8px; margin: 7px 0; border: 2px solid var(--ink); background: #efefe9; }
+		.repo .config { color: var(--ink); }
+		.worktree-definition { margin: 18px 0 0; padding: 15px 22px; font-size: 0.68em; }
+		.worktree-definition + .worktrees { margin-top: 18px; }
+		.file-transfer { display: grid; grid-template-columns: 1fr 120px 1fr; gap: 8px 16px; align-items: center; margin-top: 24px; font-family: 'IBM Plex Mono', monospace; }
+		.fs-header { padding: 14px 16px; border: 3px solid var(--ink); background: var(--ink); color: var(--white); }
+		.fs-header.linked { background: var(--blue); color: var(--ink); }
+		.fs-header span { display: block; margin-bottom: 4px; font-size: 0.36em; font-weight: 600; }
+		.fs-header strong { display: block; color: inherit; font-size: 0.62em; }
+		.transfer-label { text-align: center; font-size: 0.34em; font-weight: 600; }
+		.fs-entry { display: flex; justify-content: space-between; gap: 12px; padding: 8px 13px; border: 2px solid var(--ink); background: var(--white); font-size: 0.46em; font-weight: 600; }
+		.fs-entry.local { background: #fff1ee; }
+		.transfer-arrow { text-align: center; font-size: 0.48em; font-weight: 600; }
+		.transfer-arrow.tracked { color: #2456c4; }
+		.transfer-arrow.blocked { color: #a32020; }
+		.transfer-summary { margin-top: 18px !important; font-size: 0.66em !important; }
+		.worktree-surfaces { display: grid; gap: 16px; margin-top: 20px; }
+		.worktree-surface { display: grid; grid-template-columns: 230px 1fr; align-items: center; gap: 18px; padding: 14px 16px; border: 3px solid var(--ink); background: var(--white); }
+		.worktree-surface h3 { margin: 0 0 8px; font-size: 0.68em; }
+		.worktree-surface p { margin: 0; color: var(--muted); font-size: 0.46em; line-height: 1.35; }
+		.reveal .worktree-surface img { display: block; width: 100%; max-width: none; max-height: none; margin: 0; border: 2px solid #d7d7d2; }
+		.setup-intro { margin: 14px 0 0; color: var(--muted); font-size: 0.64em !important; }
+		.worktree-setup-example { display: grid; grid-template-columns: 0.85fr 1.25fr; gap: 22px; align-items: stretch; margin-top: 16px; }
+		.setup-prompt { padding: 22px; border: 3px solid var(--ink); border-left: 12px solid var(--blue); background: var(--white); }
+		.setup-prompt .tag, .setup-script .tag { display: inline-block; margin-bottom: 16px; padding: 5px 8px; border: 2px solid var(--ink); background: var(--lime); font-family: 'IBM Plex Mono', monospace; font-size: 0.4em; font-weight: 600; }
+		.setup-prompt p { margin: 0; font-size: 0.64em; line-height: 1.48; }
+		.setup-script { padding: 18px; border: 3px solid var(--ink); background: var(--yellow); }
+		.setup-script pre { margin: 0; box-shadow: none; }
+		.setup-script pre code { font-size: 0.46em; line-height: 1.35; }
+		.technique-example { grid-template-columns: 0.88fr 1.22fr; }
+		.technique-instructions ul { margin: 0; padding-left: 1.15em; font-size: 0.62em; line-height: 1.42; }
+		.technique-instructions li + li { margin-top: 10px; }
+		.technique-code pre code { font-size: 0.5em; line-height: 1.38; }
+		.skill-example { grid-template-columns: 0.95fr 1.15fr; }
+		.skill-example .setup-prompt p { font-size: 0.68em; }
+		.skill-discovery h3 { margin: 0 0 14px; font-size: 0.82em; }
+		.skill-package h3 { margin: 0 0 16px; font-family: 'IBM Plex Mono', monospace; font-size: 0.66em; }
+		.skill-file { display: grid; grid-template-columns: 130px 1fr; gap: 14px; align-items: center; padding: 11px 0; border-top: 2px solid var(--ink); }
+		.skill-file strong { font-family: 'IBM Plex Mono', monospace; font-size: 0.5em; }
+		.skill-file span { font-size: 0.48em; line-height: 1.3; }
+		.port-prerequisite { display: grid; grid-template-columns: 180px 1fr; align-items: stretch; margin-top: 22px; border: 3px solid var(--ink); background: var(--lime); }
+		.port-prerequisite > strong { display: flex; align-items: center; justify-content: center; padding: 15px; background: var(--ink); color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 0.42em; }
+		.port-prerequisite div { padding: 14px 20px; }
+		.port-prerequisite h3 { margin: 0 0 5px; font-size: 0.62em; }
+		.port-prerequisite p { margin: 0; font-size: 0.48em; }
+		.port-choice { margin: 16px 0 0 !important; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 0.6em !important; font-weight: 600; }
+		.port-approaches { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 4px; }
+		.port-approach { position: relative; min-height: 190px; padding: 10px 24px 16px; border: 3px solid var(--ink); background: var(--white); }
+		.port-approach.script { border-top: 28px solid var(--coral); }
+		.port-approach.instructions { border-top: 28px solid var(--blue); }
+		.port-approach .tag { position: absolute; top: -22px; left: 16px; display: block; width: max-content; margin: 0; color: var(--ink); font-family: 'IBM Plex Mono', monospace; font-size: 0.36em; font-weight: 600; line-height: 1; }
+		.port-approach h3 { margin: 0 0 10px; font-size: 0.68em; }
+		.port-approach ul { margin: 0; padding-left: 1.35em; font-size: 0.52em; line-height: 1.4; }
+		.port-approach p { margin: 12px 0 0; font-size: 0.48em; font-weight: 600; }
+
+		.subagent-flow { display: grid; grid-template-columns: 0.82fr 58px 1.25fr 58px 0.82fr; gap: 12px; align-items: center; margin-top: 34px; }
+		.subagent-stage { min-height: 178px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; padding: 22px 18px; border: 3px solid var(--ink); background: var(--white); text-align: center; }
+		.subagent-stage.delegate { background: var(--lime); }
+		.subagent-stage.integrate { background: var(--coral); }
+		.subagent-stage .step { font-family: 'IBM Plex Mono', monospace; font-size: 0.38em; font-weight: 600; }
+		.subagent-stage strong { display: block; margin-top: 18px; font-size: 0.68em; }
+		.subagent-stage span { display: block; margin-top: 8px; font-size: 0.46em; line-height: 1.3; }
+		.subagent-flow-arrow { text-align: center; font-size: 1.3em; font-weight: 700; }
+		.subagent-parallel { min-height: 178px; box-sizing: border-box; padding: 15px; border: 3px solid var(--ink); background: #f1f1ed; }
+		.subagent-parallel > strong { display: block; margin-bottom: 13px; text-align: center; font-size: 0.62em; }
+		.subagent-workers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+		.subagent-worker { display: grid; min-height: 96px; place-items: center; padding: 10px 6px; border: 2px solid var(--ink); background: var(--white); text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 0.38em; font-weight: 600; line-height: 1.25; }
+		.subagent-result { margin: 25px 0 0 !important; text-align: center; font-size: 0.68em !important; font-weight: 700; }
+		.subagent-entry-paths { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 26px; margin-top: 24px; }
+		.subagent-entry { min-width: 0; padding: 20px 22px; border: 3px solid var(--ink); background: var(--white); }
+		.subagent-entry.built-in { border-top: 14px solid var(--blue); }
+		.subagent-entry.prompted { border-top: 14px solid var(--lime); }
+		.subagent-entry .tag { margin-bottom: 14px; }
+		.subagent-command { display: block; margin: 8px 0 16px; font-family: 'IBM Plex Mono', monospace; font-size: 1.05em; font-weight: 700; }
+		.subagent-entry > p { margin: 0; color: var(--muted); font-size: 0.5em; line-height: 1.35; }
+		.subagent-command-flow { display: grid; grid-template-columns: 1fr 34px 1.2fr 34px 1fr; align-items: center; margin-top: 25px; }
+		.subagent-command-flow span { padding: 10px 6px; border: 2px solid var(--ink); background: #f1f1ed; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 0.34em; font-weight: 600; }
+		.subagent-command-flow b { text-align: center; font-size: 0.7em; }
+		.reveal .subagent-entry.prompted pre { margin-top: 3px; padding: 15px 17px; box-shadow: none; }
+		.reveal .subagent-entry.prompted pre code { min-height: 0; font-size: 0.56em; line-height: 1.3; }
+		.subagent-entry-claim { margin: 22px 0 0 !important; text-align: center; font-size: 0.66em !important; font-weight: 700; }
+		.delegation-map { display: grid; grid-template-columns: 310px 90px 1fr; gap: 18px; align-items: center; margin-top: 24px; }
+		.delegation-parent { padding: 26px 22px; border: 3px solid var(--ink); background: var(--lime); }
+		.delegation-parent .tag { margin-bottom: 18px; }
+		.delegation-parent h3 { margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 0.76em; }
+		.delegation-parent p { margin: 10px 0 0; font-size: 0.5em; }
+		.delegation-arrow { text-align: center; font-size: 1.5em; font-weight: 700; }
+		.delegation-workers { display: grid; gap: 12px; }
+		.delegation-worker { display: grid; grid-template-columns: 155px 150px 1fr; gap: 16px; align-items: center; padding: 14px 18px; border: 3px solid var(--ink); background: var(--white); }
+		.delegation-worker.same { border-left: 14px solid var(--blue); }
+		.delegation-worker.new { border-left: 14px solid var(--coral); }
+		.delegation-worker .session-kind { font-family: 'IBM Plex Mono', monospace; font-size: 0.4em; font-weight: 600; }
+		.delegation-worker strong { font-family: 'IBM Plex Mono', monospace; font-size: 0.55em; }
+		.delegation-worker span:last-child { color: var(--muted); font-size: 0.48em; }
+		.delegation-claim { margin: 24px 0 0 !important; text-align: center; font-size: 0.66em !important; font-weight: 700; }
+		.attention-loop { display: grid; grid-template-columns: 1fr 55px 1.15fr 55px 1.55fr; gap: 0; align-items: center; margin-top: 28px; }
+		.attention-step { height: 145px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; padding: 20px; border: 3px solid var(--ink); background: var(--white); }
+		.attention-step strong { font-size: 0.72em; }
+		.attention-loop > .attention-step strong { white-space: nowrap; }
+		.attention-step span { margin-top: 8px; color: var(--muted); font-size: 0.5em; line-height: 1.3; }
+		.attention-arrow { position: relative; align-self: stretch; font-size: 0; }
+		.attention-arrow::before { content: ''; position: absolute; top: 50%; right: 0; left: 0; border-top: 4px solid var(--ink); transform: translateY(-2px); }
+		.attention-arrow::after { content: ''; position: absolute; top: 50%; right: 0; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-left: 13px solid var(--ink); transform: translateY(-8px); }
+		.notification-mock { position: relative; height: 145px; box-sizing: border-box; padding: 11px 42px 11px 18px; overflow: hidden; border: 2px solid #b9b9b3; border-radius: 8px; background: var(--white); box-shadow: 0 18px 38px rgba(18, 18, 18, 0.24), 0 3px 8px rgba(18, 18, 18, 0.16); transform-origin: top right; }
+		.notification-mock::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 8px; background: var(--yellow); }
+		.notification-mock::after { content: '\00d7'; position: absolute; top: 10px; right: 14px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 0.52em; }
+		.present .notification-mock.fragment.visible { animation: notification-arrive 700ms cubic-bezier(0.2, 0.85, 0.25, 1.15) both; }
+		.notification-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 0.42em; font-weight: 600; }
+		.notification-header span { margin-left: auto; color: var(--muted); font-weight: 500; }
+		.reveal .notification-header img { width: 30px; max-width: none; height: 30px; max-height: none; margin: 0; padding: 5px; border-radius: 6px; background: var(--yellow); }
+		.notification-mock strong { display: block; font-size: 0.64em; }
+		.notification-mock p { margin: 5px 0 0; font-size: 0.48em; }
+		@keyframes notification-arrive { 0% { opacity: 0; transform: translate(34px, -18px) scale(0.94); } 70% { opacity: 1; transform: translate(-3px, 2px) scale(1.01); } 100% { opacity: 1; transform: translate(0, 0) scale(1); } }
+		@media (prefers-reduced-motion: reduce) { .present .notification-mock.fragment.visible { animation: none; } }
+		.attention-claim { margin: 24px 0 0 !important; text-align: center; font-size: 0.78em !important; font-weight: 700; }
+		.hooks-example { grid-template-columns: 0.75fr 1.25fr; margin-top: 20px; }
+		.hooks-example > * { min-width: 0; }
+		.reveal .hook-config pre, .reveal .hook-script pre { margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+		.reveal .hook-config pre code { font-size: 0.84em; line-height: 1.32; white-space: pre-wrap; overflow-wrap: anywhere; }
+		.reveal .hook-script pre code { font-size: 0.84em; line-height: 1.32; white-space: pre-wrap; overflow-wrap: anywhere; }
+		.hook-script { background: #f1f1ed; }
+		.agent-inbox-layout { display: grid; grid-template-columns: 680px 1fr; gap: 28px; align-items: center; margin-top: 18px; }
+		.agent-inbox-shot { position: relative; border: 3px solid var(--ink); background: var(--white); box-shadow: 8px 8px 0 var(--ink); }
+		.reveal .agent-inbox-shot img { display: block; width: 100%; max-width: none; height: auto; max-height: none; margin: 0; }
+		.inbox-marker { position: absolute; width: 34px; height: 34px; border: 4px solid var(--marker-color); border-radius: 50%; background: transparent; box-shadow: 0 0 0 2px var(--white); font-size: 0; transform: translate(-50%, -50%); }
+		.inbox-marker::after { content: attr(data-number); position: absolute; top: -20px; left: 27px; display: grid; place-items: center; width: 25px; height: 25px; border: 3px solid var(--ink); border-radius: 50%; background: var(--marker-color); color: var(--ink); font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 700; }
+		.inbox-marker.ready { --marker-color: var(--lime); top: 42%; left: 90.5%; }
+		.inbox-marker.needs-input { --marker-color: var(--yellow); top: 54%; left: 6%; }
+		.inbox-marker.merged-pr { --marker-color: #bda6ff; top: 67%; left: 90.5%; }
+		.inbox-marker.closed-pr { --marker-color: var(--coral); top: 79%; left: 90.5%; }
+		.inbox-states { display: grid; gap: 11px; }
+		.inbox-state { position: relative; padding: 13px 15px 13px 58px; border: 3px solid var(--ink); background: var(--white); }
+		.inbox-state::before { content: attr(data-number); position: absolute; top: 50%; left: 16px; display: grid; place-items: center; width: 30px; height: 30px; border: 3px solid var(--ink); border-radius: 50%; background: var(--state-color); font-family: 'IBM Plex Mono', monospace; font-size: 0.4em; font-weight: 700; transform: translateY(-50%); }
+		.inbox-state.ready { --state-color: var(--lime); }
+		.inbox-state.needs-input { --state-color: var(--yellow); }
+		.inbox-state.merged-pr { --state-color: #bda6ff; }
+		.inbox-state.closed-pr { --state-color: var(--coral); }
+		.inbox-state strong { display: block; font-size: 0.62em; }
+		.inbox-state span { display: block; margin-top: 4px; color: var(--muted); font-size: 0.46em; line-height: 1.3; }
+		.inbox-claim { margin: 4px 0 0 !important; font-size: 0.56em !important; font-weight: 700; }
+		.activation-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 28px; }
+		.activation-mode { padding: 22px 24px; border: 3px solid var(--ink); background: var(--white); }
+		.activation-mode.schedule { border-top: 14px solid var(--blue); }
+		.activation-mode.trigger { border-top: 14px solid var(--coral); }
+		.activation-mode h3 { margin: 0 0 18px; font-size: 0.82em; }
+		.activation-mode .mode-description { margin: 15px 0 0; color: var(--muted); font-size: 0.5em; }
+		.schedule-timeline { display: grid; grid-template-columns: repeat(3, 1fr); position: relative; min-height: 82px; margin: 22px 14px 20px; }
+		.schedule-timeline::before { content: ''; position: absolute; top: 43px; right: 12%; left: 12%; border-top: 3px solid var(--ink); }
+		.schedule-point { position: relative; z-index: 1; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 0.42em; font-weight: 600; }
+		.schedule-point strong { display: block; margin-bottom: 7px; font-size: 1.05em; }
+		.schedule-point i { display: block; width: 22px; height: 22px; margin: 0 auto 10px; border: 3px solid var(--ink); border-radius: 50%; background: var(--blue); }
+		.trigger-flow { display: grid; grid-template-columns: 1fr 55px 1fr; align-items: center; min-height: 89px; margin: 22px 0 20px; }
+		.trigger-node { padding: 16px 12px; border: 3px solid var(--ink); background: #fff1ee; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 0.44em; font-weight: 600; }
+		.trigger-node small { display: block; margin-bottom: 5px; font-size: 0.78em; font-weight: 500; }
+		.trigger-arrow { text-align: center; font-size: 1em; font-weight: 700; }
+		.reveal .activation-list-label { margin: 0 0 5px; font-size: 0.46em !important; font-weight: 700; }
+		.activation-examples { margin: 0; padding-left: 1.2em; font-size: 0.62em; line-height: 1.4; }
+		.activation-mode .mode-description { color: var(--ink); font-size: 0.62em; font-weight: 600; }
+		.automation-layout { display: grid; grid-template-columns: 0.7fr 1.3fr; gap: 28px; align-items: start; margin-top: 18px; }
+		.automation-panel { min-width: 0; margin: 0; }
+		.automation-panel figcaption { margin-bottom: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.5em; font-weight: 600; text-transform: uppercase; }
+		.automation-shot { display: grid; height: 430px; place-items: center; overflow: hidden; border: 3px solid var(--ink); background: var(--white); box-shadow: 8px 8px 0 var(--ink); }
+		.reveal .automation-shot img { display: block; width: 100%; max-width: none; height: 100%; max-height: none; margin: 0; object-fit: contain; }
+		.agentic-file { margin-top: 16px; border: 3px solid var(--ink); background: rgba(255, 255, 255, 0.55); }
+		.agentic-file-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 3px solid var(--ink); background: var(--ink); color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 0.48em; font-weight: 600; }
+		.agentic-file-header span { color: var(--lime); font-size: 0.86em; text-transform: uppercase; }
+		.agentic-workflow-layout { display: grid; grid-template-columns: minmax(0, 0.85fr) 72px minmax(0, 1.15fr); gap: 14px; align-items: stretch; padding: 14px; }
+		.agentic-workflow-panel { display: grid; min-width: 0; grid-template-rows: auto 1fr; }
+		.agentic-workflow-panel h3 { margin: 0 0 10px; font-size: 0.66em; }
+		.agentic-workflow-panel h3 span { display: block; margin-top: 3px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 0.58em; font-weight: 600; text-transform: uppercase; }
+		.reveal .agentic-workflow-panel pre { height: auto; min-height: 290px; padding: 16px 18px; overflow: hidden; box-shadow: none; }
+		.reveal .agentic-workflow-panel pre code { min-height: 0; font-size: 0.56em; line-height: 1.2; }
+		.agentic-workflow-plus { align-self: center; display: grid; place-items: center; width: 58px; height: 58px; border: 3px solid var(--ink); border-radius: 50%; background: var(--lime); font-family: 'IBM Plex Mono', monospace; font-size: 1.15em; font-weight: 700; }
+
+		.callout { border-left: 12px solid var(--blue); background: var(--white); padding: 22px 28px; margin-top: 26px; font-size: 0.85em; }
+		.demo { background: var(--blue) !important; color: var(--white) !important; }
+		.demo h2, .demo h3, .demo p, .demo li { color: var(--white); }
+		.demo .kicker { border-bottom-color: var(--lime); }
+		.demo-box { margin-top: 30px; padding: 24px; border: 3px solid var(--white); max-width: 900px; }
+
+		.recap-formula { margin-top: 26px; }
+		.recap-system { border: 3px solid var(--ink); background: var(--white); }
+		.recap-attributes { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 3px solid var(--ink); }
+		.recap-attribute { padding: 14px; border-right: 2px solid var(--ink); background: var(--term-color); text-align: center; }
+		.recap-attribute:last-child { border-right: 0; }
+		.recap-attribute strong { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 0.48em; }
+		.recap-attribute span { display: block; margin-top: 6px; color: var(--muted); font-size: 0.4em; line-height: 1.2; }
+		.recap-attribute.bounded { --term-color: #dbe5ff; }
+		.recap-attribute.isolated { --term-color: var(--yellow); }
+		.recap-attribute.visible { --term-color: var(--lime); }
+		.recap-lanes { display: grid; gap: 14px; padding: 18px 20px; }
+		.recap-lane { --term-color: var(--packet-color); }
+		.recap-formula-note { margin: 24px 0 0 !important; text-align: center; font-size: 0.74em !important; font-weight: 700; }
+		.recap-motion { display: grid; width: 100%; grid-template-columns: 32px 1fr 12px; align-items: center; gap: 5px; }
+		.recap-node { display: grid; width: 30px; height: 30px; place-items: center; border: 2px solid var(--ink); border-radius: 50%; background: var(--white); }
+		.reveal .recap-node img { display: block; width: 21px; height: 21px; margin: 0; }
+		.recap-track { position: relative; height: 26px; overflow: hidden; border: 2px solid var(--ink); background: var(--white); }
+		.recap-track::before { content: ""; position: absolute; left: 5px; right: 5px; top: 50%; border-top: 2px dashed var(--line); transform: translateY(-50%); }
+		.recap-packet { position: absolute; left: 3px; top: 4px; width: 30px; height: 14px; border: 2px solid var(--ink); background: var(--term-color); animation: recap-work-flow 3s cubic-bezier(0.45, 0, 0.55, 1) infinite var(--delay); }
+		.recap-end { width: 9px; height: 9px; border: 2px solid var(--ink); border-radius: 50%; background: var(--term-color); animation: endpoint-pulse 3s ease-in-out infinite calc(var(--delay) + 2.15s); }
+		@keyframes recap-work-flow {
+			0% { left: -34px; opacity: 0; }
+			12% { opacity: 1; }
+			72% { left: calc(100% - 34px); opacity: 1; }
+			82%, 100% { left: calc(100% - 34px); opacity: 0; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.recap-packet { left: calc(100% - 34px); animation: none; opacity: 1; }
+			.recap-end { animation: none; }
+		}
+
+		.reveal pre { width: 100%; margin: 0; padding: 18px 22px; box-sizing: border-box; border: 3px solid var(--ink); background: var(--white); box-shadow: 7px 7px 0 var(--ink); }
+		.reveal pre code { font-family: 'IBM Plex Mono', monospace; font-size: 0.68em; line-height: 1.45; background: transparent; }
+		.reveal code { font-family: 'IBM Plex Mono', monospace; }
+		.small { font-size: 0.66em !important; }
+		</style>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+
+				<section class="title-slide">
+					<div>
+						<h1 aria-label="Parallelize Your Development with GitHub Copilot">
+							Parallelize Your Development with
+							<img class="title-lockup" src="assets/GitHub_Copilot_Lockup_Black.svg" alt="">
+							<span class="sr-only"> GitHub Copilot</span>
+						</h1>
+						<p class="author">Pamela Fox</p>
+						<p class="mono muted">Principal Cloud Advocate<br>
+                            Microsoft / GitHub</p>
+					</div>
+					<div class="parallel-viz" aria-hidden="true">
+						<div class="parallel-lanes">
+							<div class="parallel-lane" style="--packet-color: var(--coral); --delay: 0s;">
+								<div class="copilot-node"><img class="copilot-viz-icon" src="assets/Copilot_Icon_Black.svg" alt=""></div><div class="parallel-track"><i class="work-packet"></i></div><span class="parallel-end"></span>
+							</div>
+							<div class="parallel-lane" style="--packet-color: var(--blue); --delay: 0.22s;">
+								<div class="copilot-node"><img class="copilot-viz-icon" src="assets/Copilot_Icon_Black.svg" alt=""></div><div class="parallel-track"><i class="work-packet"></i></div><span class="parallel-end"></span>
+							</div>
+							<div class="parallel-lane" style="--packet-color: var(--yellow); --delay: 0.44s;">
+								<div class="copilot-node"><img class="copilot-viz-icon" src="assets/Copilot_Icon_Black.svg" alt=""></div><div class="parallel-track"><i class="work-packet"></i></div><span class="parallel-end"></span>
+							</div>
+						</div>
+					</div>
+					<aside class="notes">Open with a familiar feeling: several tasks are ready, but our development workflow still assumes one active thread. The promise is not maximum agent count. It is controlled concurrency.</aside>
+				</section>
+
+				<section>
+					<div class="about-layout">
+						<div>
+							<p class="kicker">About me</p>
+							<h2>Pamela Fox</h2>
+							<p class="about-role">Principal Cloud Advocate at Microsoft / GitHub</p>
+							<p class="about-history">Formerly: UC Berkeley, Coursera,<br>Khan Academy, Google</p>
+							<table class="about-links">
+								<tbody>
+									<tr><td>Twitter</td><td><a href="https://twitter.com/pamelafox" target="_blank" rel="noopener noreferrer">&#x1F517; @pamelafox</a></td></tr>
+									<tr><td>LinkedIn</td><td><a href="https://www.linkedin.com/in/pamela-s-fox/" target="_blank" rel="noopener noreferrer">&#x1F517; linkedin.com/in/pamela-s-fox</a></td></tr>
+									<tr><td>GitHub</td><td><a href="https://github.com/pamelafox" target="_blank" rel="noopener noreferrer">&#x1F517; github.com/pamelafox</a></td></tr>
+									<tr><td>Website</td><td><a href="https://pamelafox.org" target="_blank" rel="noopener noreferrer">&#x1F517; pamelafox.org</a></td></tr>
+								</tbody>
+							</table>
+						</div>
+						<img class="about-photo" src="https://pamelafox.github.io/ai-powered-presentation-workflow/photo_pamela_olaf.jpg" alt="Pamela Fox smiling with an Olaf statue">
+					</div>
+				</section>
+
+				<section>
+					<p class="kicker">Before AI coding</p>
+					<h2>One active feature was our limit</h2>
+					<div class="lanes">
+						<div class="lane"><span class="lane-label">ACTIVE</span><div class="track"><span class="task coral">Design A</span><span class="wait"></span><span class="task blue">Build A</span><span class="wait"></span><span class="task green">Test A</span></div></div>
+						<div class="lane queued"><span class="lane-label">FEATURE B</span><div class="track"><span class="task">Not started</span><span class="wait"></span></div></div>
+						<div class="lane queued"><span class="lane-label">FEATURE C</span><div class="track"><span class="task">Not started</span><span class="wait"></span></div></div>
+					</div>
+					<p class="callout">We worked sequentially because parallel work was hard: branch collisions, shared environments, and the effort of keeping multiple feature-sized mental models active at once.</p>
+					<aside class="notes">Sequential work was not a failure of ambition. It was a sensible response to coordination cost. Starting another feature usually meant disrupting the first one and carrying both contexts ourselves.</aside>
+				</section>
+
+				<section class="supervision-slide">
+					<p class="kicker">After AI coding</p>
+					<h2>We are engineering managers for agents</h2>
+					<div class="lanes">
+						<div class="lane"><span class="lane-label">FEATURE A</span><div class="track"><span class="task coral">Agent working</span><span class="wait"></span><span class="task green">Review</span></div></div>
+						<div class="lane"><span class="lane-label">FEATURE B</span><div class="track"><span class="task blue">Agent working</span><span class="wait"></span><span class="task coral">Blocked</span></div></div>
+						<div class="lane"><span class="lane-label">FEATURE C</span><div class="track"><span class="task">Scope</span><span class="wait"></span><span class="task blue">Agent working</span></div></div>
+					</div>
+					<div class="supervisor-bar"><span>Specify</span><span>Start</span><span>Observe</span><span>Unblock</span><span>Review</span></div>
+					<p class="source-note"><a href="https://humanwhocodes.com/blog/2026/09/five-roles-working-ai/" target="_blank" rel="noopener noreferrer">&#x1F517; Related reading: Five software engineering roles for working with AI</a></p>
+					<aside class="notes">Our work does not disappear; it moves up a level. Start several bounded tasks, make progress on each until blocked, and use agent run time to steer another lane. Zakas describes a spectrum of roles; this talk focuses on the engineering manager mode while staying ready to become hands-on when risk or ambiguity demands it.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Today&rsquo;s agenda</p>
+					<h2>Three dimensions of parallelization</h2>
+					<div class="grid-3">
+						<div class="card"><span class="tag">01</span><h3>Environment</h3><p>Active workspace, worktree, another repository, or cloud?</p></div>
+						<div class="card"><span class="tag">02</span><h3>Timing</h3><p>Now, lightly supervised, on an event, or while you are away?</p></div>
+						<div class="card"><span class="tag">03</span><h3>Ownership</h3><p>Developer, one agent, independent agents, or subagents?</p></div>
+					</div>
+				</section>
+
+				<section class="heading-only">
+					<p class="kicker">Question one</p>
+					<h2>Where should the work happen?</h2>
+					<p>Different Copilot surfaces unlock different forms of parallel&nbsp;work.</p>
+				</section>
+
+				<section>
+					<p class="kicker">Choose a surface</p>
+					<h2>Match the surface to the parallel work</h2>
+					<div class="surface-spectrum">
+						<div class="surface-axis"><span>Less parallel</span><span class="surface-axis-line"></span><span>More parallel</span></div>
+						<div class="surface-levels">
+							<div class="surface-level"><span class="tag">Local session</span><h3>Direct control</h3><div class="surface-products"><span>VS Code</span><span>Copilot CLI</span></div><p class="surface-description">One active focus on one machine.</p></div>
+							<div class="surface-level"><span class="tag">Parallel session UI</span><h3>See and steer many</h3><div class="surface-products"><span>VS Code Agents window</span><span>Copilot app</span></div><p class="surface-description">View and manage concurrent agent sessions.</p></div>
+							<div class="surface-level"><span class="tag">Cloud execution</span><h3>Scale the work</h3><div class="surface-products"><span>Copilot cloud agents</span></div><p class="surface-description">Isolated cloud compute for each task.</p></div>
+						</div>
+					</div>
+				</section>
+
+				<section>
+					<h2>VS Code keeps you in the inner loop</h2>
+					<div class="surface-showcase">
+						<img class="surface-screenshot" src="assets/screenshot_vscode.png" alt="VS Code with source code, GitHub Copilot Chat, and a terminal visible alongside another application">
+						<div class="surface-points">
+							<div class="surface-point"><strong>Edit alongside Copilot</strong><span>The easiest surface when you want to inspect, change, and run the code yourself.</span></div>
+							<div class="surface-point"><strong>Parallelize around it</strong><span>Run other agent sessions in additional VS Code windows or other Copilot apps.</span></div>
+						</div>
+					</div>
+					<aside class="notes">Live walkthrough: Command+Tab to VS Code. Make a small code edit or run the current app or test to show why this is the easiest surface when I want to stay hands-on. Mention that parallel work can continue in other VS Code windows or Copilot surfaces. The screenshot is the fallback.</aside>
+				</section>
+
+				<section>
+					<h2>Copilot CLI works where your terminal does</h2>
+					<div class="surface-showcase">
+						<img class="surface-screenshot" src="assets/screenshot_copilotcli.png" alt="GitHub Copilot CLI working on code and tests in a terminal session">
+						<div class="surface-points">
+							<div class="surface-point"><strong>Stay in the terminal</strong><span>Inspect, edit, run, and validate without switching tools.</span></div>
+							<div class="surface-point"><strong>Parallelize by session</strong><span>Give separate tabs, windows, or worktrees independent tasks.</span></div>
+						</div>
+					</div>
+					<aside class="notes">Live walkthrough: Command+Tab to the terminal and show separate Copilot CLI sessions in tabs or windows. Briefly show one agent running a command or validation step, then point out that each session can own a different worktree or task. The screenshot is the fallback.</aside>
+				</section>
+
+				<section>
+					<h2>VS Code Agents window keeps code close</h2>
+					<div class="surface-showcase">
+						<img class="surface-screenshot" src="assets/screenshot_agentswindow.png" alt="VS Code Agents window showing agent sessions across workspaces, an active conversation, and its code changes">
+						<div class="surface-points">
+							<div class="surface-point"><strong>Manage parallel sessions</strong><span>Track status and changes across workspaces from one window.</span></div>
+							<div class="surface-point"><strong>Drop into the code</strong><span>Open files and diffs beside chat, with the session&rsquo;s terminal, tasks, and browser close by.</span></div>
+						</div>
+					</div>
+					<aside class="notes">The VS Code Agents window is currently in preview. Like Copilot App, it gives us one place to track parallel sessions across workspaces. The distinction is proximity to hands-on development: files and diffs open in an editor beside chat, and the active session brings its Files, Changes, Terminal, Tasks, and Browser context with it. That makes it easier to move from supervising an agent to inspecting or editing its code. You can also start sessions in the background with Option+Enter and open multiple sessions side by side. Live walkthrough: Command+Tab here, select a session, and open one changed file or diff to show the short path from supervision into code. The screenshot is the fallback.</aside>
+				</section>
+
+				<section>
+					<h2>Copilot App puts parallel sessions in one UI</h2>
+					<div class="surface-showcase">
+						<img class="surface-screenshot" src="assets/screenshot_copilotapp.png" alt="GitHub Copilot App showing multiple projects, an active agent session, its plan, and pull request changes">
+						<div class="surface-points">
+							<div class="surface-point"><strong>See every session</strong><span>Track concurrent work across projects from one interface.</span></div>
+							<div class="surface-point"><strong>Steer without hovering</strong><span>Review plans, progress, artifacts, and pull requests when attention is needed.</span></div>
+						</div>
+					</div>
+					<aside class="notes">Live walkthrough: Command+Tab to Copilot App and switch between sessions in different projects. Show a plan, progress update, preview, screenshot, or pull request to demonstrate lightweight supervision without dropping into the editor. The screenshot is the fallback.</aside>
+				</section>
+
+				<section class="cloud-slide">
+					<h2>Cloud agents add remote execution capacity</h2>
+					<div class="surface-showcase">
+						<img class="surface-screenshot cloud-screenshot" src="assets/screenshot_cloudagents.png" alt="GitHub dashboard showing multiple cloud agent sessions with completed, queued, and idle states">
+						<div class="surface-points">
+							<div class="surface-point"><strong>Add capacity</strong><span>Each task gets remote execution instead of competing for local processes.</span></div>
+							<div class="surface-point"><strong>Work asynchronously</strong><span>Start well-scoped tasks, monitor their state, and review completed results.</span></div>
+						</div>
+					</div>
+					<aside class="notes">Live walkthrough: Command+Tab to the GitHub dashboard and point out concurrent cloud-agent session states such as completed, queued, and idle. Open a completed task only if time allows; the key distinction is that execution capacity is remote rather than competing for local processes. The screenshot is the fallback.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Isolation strategies</p>
+					<h2>Local agents can collide on shared resources</h2>
+					<div class="collision-map">
+						<div class="agent-stack">
+							<div class="agent-lane" style="--agent-color: #ffe0da"><img class="agent-lane-icon" src="assets/Copilot_Icon_Black.svg" alt="">FEATURE A</div>
+							<div class="agent-lane" style="--agent-color: #dbe5ff"><img class="agent-lane-icon" src="assets/Copilot_Icon_Black.svg" alt="">FEATURE B</div>
+							<div class="agent-lane" style="--agent-color: #e5ffc0"><img class="agent-lane-icon" src="assets/Copilot_Icon_Black.svg" alt="">FEATURE C</div>
+						</div>
+						<div class="collision-paths"><span class="collision-path"></span><span class="collision-path"></span><span class="collision-path"></span></div>
+						<div class="shared-machine">
+							<h3>One shared machine</h3>
+							<div class="collision-list">
+								<div class="collision-item"><span>PORT 3000</span><span>OCCUPIED</span></div>
+								<div class="collision-item"><span>DATABASE</span><span>LOCKED</span></div>
+								<div class="collision-item"><span>.ENV</span><span>OVERWRITTEN</span></div>
+								<div class="collision-item"><span>BRANCH</span><span>CHANGED</span></div>
+							</div>
+						</div>
+					</div>
+					<p class="collision-takeaway">Parallel tasks need separate source, processes, state, and credentials.</p>
+					<aside class="notes">Cloud agents provide remote isolation. Local agents share a machine unless we isolate what each task can mutate. The next slides break that into source and branches, process configuration such as ports, state such as databases and caches, and task-scoped credentials.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Agent isolation</p>
+					<h2>Git worktrees give each agent its own workspace</h2>
+					<p class="callout worktree-definition"><strong>A worktree is a branch checked out into a different folder.</strong> Git creates the folder and checks out tracked files there.</p>
+					<div class="worktrees">
+						<div class="repo"><span class="folder-label">MAIN WORKTREE</span><h3>Main</h3><div class="folder-path">~/projects/my-project/</div><div class="config">BRANCH=main</div></div>
+						<div class="tree"><span class="folder-label">LINKED WORKTREE</span><h3>Agent A</h3><div class="folder-path">~/projects/my-project.worktrees/feature-a/</div><div class="config">BRANCH=feature-a</div></div>
+						<div class="tree"><span class="folder-label">LINKED WORKTREE</span><h3>Agent B</h3><div class="folder-path">~/projects/my-project.worktrees/feature-b/</div><div class="config">BRANCH=feature-b</div></div>
+					</div>
+					<p class="source-note"><a href="https://humanwhocodes.com/blog/2026/07/introduction-git-worktrees/" target="_blank" rel="noopener noreferrer">&#x1F517; Further reading: A gentle introduction to Git worktrees</a></p>
+					<aside class="notes">A worktree is easiest to understand as a branch that lives in a different directory. The project root is the main worktree. Running git worktree add creates another folder, creates or checks out a branch there, and populates it with tracked files. Each agent can work in its own directory without changing the branch or files visible to another agent. Dependencies and ignored files are not shared; the next slide covers that readiness work. Source: Nicholas C. Zakas, A gentle introduction to Git worktrees, https://humanwhocodes.com/blog/2026/07/introduction-git-worktrees/</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Agent isolation</p>
+					<h2>Start GitHub Copilot agents in a new worktree</h2>
+					<div class="worktree-surfaces">
+						<div class="worktree-surface">
+							<div><h3>VS Code Agents window</h3><p>Check <strong>New Worktree</strong> before sending the task.</p></div>
+							<img src="assets/screenshot_agentswindow_worktree.png" alt="VS Code Agents window prompt showing the New Worktree checkbox">
+						</div>
+						<div class="worktree-surface">
+							<div><h3>Copilot App</h3><p>Choose <strong>New worktree</strong> beside the repository and branch.</p></div>
+							<img src="assets/screenshot_copilotapp_worktree.png" alt="Copilot App prompt showing the New worktree control">
+						</div>
+					</div>
+					<p class="source-note"><a href="https://github.blog/ai-and-ml/github-copilot/what-are-git-worktrees-and-why-should-i-use-them/" target="_blank" rel="noopener noreferrer">&#x1F517; Further reading: What are Git worktrees and why should I use them?</a></p>
+					<aside class="notes">Both graphical surfaces expose worktree isolation when you create a session. In the VS Code Agents window, check New Worktree before sending the task. In Copilot App, choose New worktree beside the repository and current branch. Copilot CLI is different: official GitHub documentation says a standard session works in the folder where you launch it, so worktrees are not the default. The installed CLI accepts an opt-in --worktree mode, but do not assume every CLI session is isolated.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Agent isolation</p>
+					<h2>Make your project worktree-ready</h2>
+					<div class="file-transfer">
+						<div class="fs-header"><span>MAIN WORKTREE</span><strong>my-project/</strong></div>
+						<div class="transfer-label">GIT CHECKOUT</div>
+						<div class="fs-header linked"><span>LINKED WORKTREE</span><strong>feature-a/</strong></div>
+						<div class="fs-entry">|-- src/</div><div class="transfer-arrow tracked">-----&gt;</div><div class="fs-entry">|-- src/</div>
+						<div class="fs-entry">|-- package.json</div><div class="transfer-arrow tracked">-----&gt;</div><div class="fs-entry">|-- package.json</div>
+						<div class="fs-entry">|-- README.md</div><div class="transfer-arrow tracked">-----&gt;</div><div class="fs-entry">|-- README.md</div>
+						<div class="fs-entry local">|-- .env</div><div class="transfer-arrow blocked">----X</div><div></div>
+						<div class="fs-entry local">|-- node_modules/</div><div class="transfer-arrow blocked">----X</div><div></div>
+						<div class="fs-entry local">|-- dist/</div><div class="transfer-arrow blocked">----X</div><div></div>
+						<div class="fs-entry local">`-- local.db</div><div class="transfer-arrow blocked">----X</div><div></div>
+					</div>
+					<p class="transfer-summary"><strong>Tracked files are checked out.</strong><br>Ignored and untracked local state must be restored explicitly.</p>
+					<aside class="notes">A new worktree contains tracked files, not a copy of the full local environment. Source, project manifests, and documentation are checked out into the linked worktree. Ignored and untracked files such as .env, installed dependencies, generated output, and local databases do not come along. A worktree-ready project automates restoring or recreating what each agent needs.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Agent isolation</p>
+					<h2>Give agents a worktree setup prompt</h2>
+					<p class="setup-intro">One example: link a shared <code>.env</code> from the main worktree.</p>
+					<div class="worktree-setup-example">
+						<div class="setup-prompt">
+							<span class="tag">COPILOT APP PROMPT</span>
+							<p>When a session starts in a Git worktree, find <code>.env</code> in the main worktree. If it exists and this worktree has no <code>.env</code>, symlink it here. Never overwrite an existing <code>.env</code> file.</p>
+						</div>
+						<div class="setup-script">
+							<span class="tag">SHELL VERSION</span>
+							<pre><code class="language-bash" data-trim>TOP=$(git rev-parse --show-toplevel)
+GD=$(git rev-parse --git-dir)
+CD=$(git rev-parse --git-common-dir)
+
+if [[ "$GD" == *"/worktrees/"* ]]; then
+	SHARED="$(cd "$CD/.." &amp;&amp; pwd)/.env"
+	if [[ -f "$SHARED" &amp;&amp; ! -e "$TOP/.env" ]]; then
+		ln -s "$SHARED" "$TOP/.env"
+  fi
+fi</code></pre>
+						</div>
+					</div>
+					<p class="source-note"><a href="https://gist.github.com/pamelafox/96910351375eee81f38e0b1ee1326ad4" target="_blank" rel="noopener noreferrer">&#x1F517; View my full worktree setup prompt</a></p>
+					<aside class="notes">This is a simplified version of the prompt I use in Copilot App. A root .env file is normally ignored and therefore absent from a new worktree. The prompt detects a linked worktree and symlinks the main worktree's .env file only when the worktree does not already have one. The guard matters: never replace a real existing file. This deliberately shares local configuration; it does not isolate remote staging resources. That is the next problem.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Agent isolation</p>
+					<h2>Each agent needs its own port</h2>
+					<div class="port-prerequisite">
+						<strong>PREREQUISITE</strong>
+						<div><h3>Make the app read its port from the environment</h3><p><code>PORT=${PORT:-50505}</code></p></div>
+					</div>
+					<p class="port-choice">Then use either approach, or combine both:</p>
+					<div class="port-approaches">
+						<div class="port-approach script"><span class="tag">AUTOMATE</span><h3>Custom startup script</h3><ul><li>Check whether the selected port is available.</li><li>Export <code>PORT</code>.</li><li>Start the application.</li></ul><p>Enforced by tooling</p></div>
+						<div class="port-approach instructions"><span class="tag">INSTRUCT</span><h3>AGENTS.md</h3><ul><li>Choose a task-specific <code>PORT</code>.</li><li>Check whether it is occupied.</li><li>Choose another when needed.</li></ul><p>Enforced by guidance</p></div>
+					</div>
+					<p class="source-note"><a href="https://github.com/Azure-Samples/azure-search-openai-demo/pull/3117" target="_blank" rel="noopener noreferrer">&#x1F517; Example: configurable local ports in azure-search-openai-demo</a></p>
+					<aside class="notes">A separate worktree does not prevent process collisions when every app hardcodes the same port. Both approaches start with the same prerequisite: the application must read PORT from the environment. A custom startup script can check the selected port, export it, and start the app, giving stronger enforcement. Alternatively, AGENTS.md can tell each agent to choose a task-specific port and retry when it is occupied. The project can use either approach or combine both.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Agent isolation</p>
+					<h2>Local agents can still collide in staging</h2>
+					<div class="collision-map staging-map">
+						<div class="agent-stack">
+							<div class="agent-lane" style="--agent-color: #ffe0da"><img class="agent-lane-icon" src="assets/Copilot_Icon_Black.svg" alt="">FEATURE A</div>
+							<div class="agent-lane" style="--agent-color: #dbe5ff"><img class="agent-lane-icon" src="assets/Copilot_Icon_Black.svg" alt="">FEATURE B</div>
+						</div>
+						<div class="collision-paths"><span class="collision-path"></span><span class="collision-path"></span></div>
+						<div class="shared-machine">
+							<h3>One staging environment</h3>
+							<div class="collision-list">
+								<div class="collision-item"><span>DEPLOYMENT</span><span>OVERWRITTEN</span></div>
+								<div class="collision-item"><span>DATABASE</span><span>SHARED</span></div>
+								<div class="collision-item"><span>TEST RESULTS</span><span>INVALIDATED</span></div>
+							</div>
+						</div>
+					</div>
+					<aside class="notes">These are still local agents, but local work often needs remote validation. Worktrees protect local source and processes, while both features can still deploy into the same staging environment. One deployment overwrites another, shared data changes underneath tests, and validation no longer proves which branch works. Remote environments need the same deliberate isolation as local ones.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Agent isolation</p>
+					<h2>Give each agent its own staging environment</h2>
+					<div class="flow staging-flow">
+						<div class="flow-step"><span class="step-label">1</span><h3>Derive a stable name</h3><p><code>staging-<br>${BRANCH_SLUG}</code></p></div>
+						<div class="arrow">&rarr;</div>
+						<div class="flow-step"><span class="step-label">2</span><h3>Isolate mutable state</h3><p>Deployment, database, and configuration</p></div>
+						<div class="arrow">&rarr;</div>
+						<div class="flow-step"><span class="step-label">3</span><h3>Deploy and validate</h3><p>Test only this branch's environment</p></div>
+						<div class="arrow">&rarr;</div>
+						<div class="flow-step optional"><span class="step-label">4 / OPTIONAL</span><h3>Clean up</h3><p>Remove resources when the task ends</p></div>
+					</div>
+					<aside class="notes">Give every local agent a separate remote validation target. Derive a predictable resource name from the branch or session, isolate mutable deployment state, and validate only that environment. Cleanup is optional for persistent staging environments, but useful for temporary per-task resources.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Agent isolation</p>
+					<h2>Isolate Azure CLI state for each agent</h2>
+					<p class="setup-intro"><code>az</code> and <code>azd</code> normally share user-level configuration and authentication state.</p>
+					<div class="worktree-setup-example technique-example">
+						<div class="setup-prompt technique-instructions">
+							<span class="tag">AGENT INSTRUCTIONS</span>
+							<ul>
+								<li>Choose a distinct profile for each concurrent session.</li>
+								<li>Run every <code>az</code> and <code>azd</code> command through the wrapper.</li>
+								<li>Confirm the tenant and subscription before operating.</li>
+							</ul>
+						</div>
+						<div class="setup-script technique-code">
+							<span class="tag">PYTHON WRAPPER</span>
+							<pre><code class="language-python" data-trim>child_env = os.environ.copy()
+
+for name in tuple(child_env):
+	if name.upper().startswith(("AZURE_", "AZD_")):
+		child_env.pop(name)
+
+child_env["AZURE_CONFIG_DIR"] = str(paths.azure_config_dir)
+child_env["AZD_CONFIG_DIR"] = str(paths.azd_config_dir)
+child_env["AZURE_ENV_NAME"] = environment</code></pre>
+						</div>
+					</div>
+					<aside class="notes">The technique combines behavioral instructions with deterministic code. The instructions require each concurrent agent to choose a distinct profile and verify its Azure context. The Python wrapper removes inherited Azure context, then points Azure CLI and Azure Developer CLI at separate configuration directories and an isolated azd environment. This separates cached authentication and mutable CLI state; it is configuration isolation, not a security sandbox.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Agent isolation</p>
+					<h2>Turn the technique into an agent skill</h2>
+					<p class="setup-intro">An agent skill packages reusable instructions and resources that Copilot can discover for a task.</p>
+					<div class="worktree-setup-example skill-example">
+						<div class="setup-prompt skill-discovery">
+							<span class="tag">DISCOVERY</span>
+							<h3><code>name: az-azd</code></h3>
+							<p>The description tells Copilot when to load the skill: Azure CLI tasks that need isolated configuration and authentication state.</p>
+						</div>
+						<div class="setup-script skill-package">
+							<span class="tag">SKILL PACKAGE</span>
+							<h3>.github/skills/az-azd/</h3>
+							<div class="skill-file"><strong>SKILL.md</strong><span>Discovery metadata and operating instructions</span></div>
+							<div class="skill-file"><strong>az-azd.py</strong><span>Separate Azure CLI configuration and authentication profiles</span></div>
+						</div>
+					</div>
+					<p class="source-note"><a href="https://github.com/mattgotteiner/skills" target="_blank" rel="noopener noreferrer">&#x1F517; Example: az-azd agent skill</a></p>
+					<aside class="notes">Once the technique works, package it as an agent skill so it can be reused across sessions. A skill's name and description help Copilot discover it for a matching task. SKILL.md provides the operating instructions, and companion scripts provide deterministic behavior. Project skills live under .github/skills; personal skills can live under the user's Copilot skills directory.</aside>
+				</section>
+
+				<section class="heading-only">
+					<p class="kicker">Timing</p>
+					<h2>When should the work happen?</h2>
+					<p>Parallel work can be active, lightly supervised, event-driven, or scheduled.</p>
+				</section>
+
+				<section>
+					<p class="kicker">Agent monitoring</p>
+					<h2>Let agents tell you when they need attention</h2>
+					<div class="attention-loop">
+						<div class="attention-step"><strong>Start the agent</strong><span>Give it bounded work</span></div>
+						<div class="attention-arrow">&rarr;</div>
+						<div class="attention-step"><strong>Work elsewhere</strong><span>Another window or app on the same machine</span></div>
+						<div class="attention-arrow">&rarr;</div>
+						<div class="notification-mock fragment">
+							<div class="notification-header"><img src="assets/Copilot_Icon_Black.svg" alt="">GITHUB COPILOT <span>now</span></div>
+							<strong>Feature A is ready for review</strong>
+							<p>Tests passed &middot; 4 files changed</p>
+						</div>
+					</div>
+					<p class="attention-claim">You should not need to watch an agent work.</p>
+					<aside class="notes">Parallel work requires attention routing. Start a bounded task, move to other work, and let the product return the task to your attention when it completes or needs input. A useful notification identifies the session, tells you what happened, and gives you a clear next action. The next slide shows how hooks can customize that signal.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Agent monitoring</p>
+					<h2>Customize agent notifications with hooks</h2>
+					<p class="setup-intro">VS Code agent hooks can run a command when an agent lifecycle event occurs.</p>
+					<div class="worktree-setup-example hooks-example">
+						<div class="setup-prompt hook-config">
+							<span class="tag">HOOK CONFIG</span>
+							<pre><code class="language-json" data-trim>{
+  "hooks": {
+    "Stop": [{
+      "type": "command",
+      "command": "/bin/zsh ~/.copilot/hooks/agent-complete-sound.sh",
+      "timeout": 30
+    }]
+  }
+}</code></pre>
+						</div>
+						<div class="setup-script hook-script">
+							<span class="tag">COMMAND</span>
+							<pre><code class="language-bash" data-trim>/usr/bin/afplay "$HOME/Documents/sound.m4a"
+
+# Check if the user has been idle for 60 seconds.
+idle_ns=$(
+	/usr/sbin/ioreg -c IOHIDSystem |
+	/usr/bin/awk '/HIDIdleTime/ { print $NF; exit }'
+)
+(( idle_ns &lt; 60000000000 )) &amp;&amp; exit 0
+
+# ...find title in the session transcript...
+/usr/bin/say "${title:-Agent finished}"</code></pre>
+						</div>
+					</div>
+					<p class="source-note"><a href="https://gist.github.com/pamelafox/c9cb3e000fdf127741b121d7c5abbf02" target="_blank" rel="noopener noreferrer">&#x1F517; Full agent completion hook</a> &nbsp; <a href="https://vscode.club/docs/agent-customization/hooks" target="_blank" rel="noopener noreferrer">&#x1F517; Agent hooks documentation</a></p>
+					<aside class="notes">Built-in notifications may be enough, but hooks let you route agent lifecycle events through your own commands. This Stop hook invokes a zsh script when the agent finishes. The full script plays a completion sound, checks whether the machine has been idle for at least a minute, finds the session title, and speaks that title aloud. The snippet abbreviates the idle-time and title lookup helpers; the link contains the complete implementation.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Agent monitoring</p>
+					<h2>Use the agent inbox to route your attention</h2>
+					<div class="agent-inbox-layout">
+						<div class="agent-inbox-shot">
+							<img src="assets/screenshot_agent_inbox.png" alt="GitHub Copilot App project list showing agent sessions and their current states">
+							<span class="inbox-marker ready" data-number="1"></span>
+							<span class="inbox-marker needs-input" data-number="2"></span>
+							<span class="inbox-marker merged-pr" data-number="3"></span>
+							<span class="inbox-marker closed-pr" data-number="4"></span>
+						</div>
+						<div class="inbox-states">
+							<div class="inbox-state ready" data-number="1"><strong>Ready for review</strong><span>Open the result when judgment is needed.</span></div>
+							<div class="inbox-state needs-input" data-number="2"><strong>Needs input</strong><span>Answer, then let the work continue.</span></div>
+							<div class="inbox-state merged-pr" data-number="3"><strong>Merged PR</strong><span>The session's pull request was merged.</span></div>
+							<div class="inbox-state closed-pr" data-number="4"><strong>Closed PR</strong><span>The session's pull request is closed.</span></div>
+							<p class="inbox-claim">Scan the states.<br>Open only what needs you.</p>
+						</div>
+					</div>
+					<aside class="notes">An agent inbox turns many parallel sessions into a manageable attention queue. The status indicators show which work is ready for review, which agent needs input, and which sessions have merged or closed pull requests. Scan the states instead of watching every session, then open only the work that needs human judgment or an unblock.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Background Agents</p>
+					<h2>Autonomous agents can start their own work</h2>
+					<div class="activation-modes">
+						<div class="activation-mode schedule">
+							<h3>On a schedule</h3>
+							<div class="schedule-timeline"><span class="schedule-point"><strong>MON</strong><i></i>9 AM</span><span class="schedule-point"><strong>TUES</strong><i></i>9 AM</span><span class="schedule-point"><strong>WED</strong><i></i>9 AM</span></div>
+							<p class="activation-list-label">Example uses:</p>
+							<ul class="activation-examples"><li>Daily issue triage</li><li>Morning review summary</li><li>Weekly repository health check</li></ul>
+							<p class="mode-description">Predictable, recurring work</p>
+						</div>
+						<div class="activation-mode trigger">
+							<h3>On a trigger</h3>
+							<div class="trigger-flow"><div class="trigger-node"><small>EVENT</small>CI FAILS</div><div class="trigger-arrow">&rarr;</div><div class="trigger-node">AGENT STARTS</div></div>
+							<p class="activation-list-label">Example uses:</p>
+							<ul class="activation-examples"><li>CI failure analysis</li><li>Issue label applied</li><li>Documentation freshness check</li></ul>
+							<p class="mode-description">Reactive repository work</p>
+						</div>
+					</div>
+					<aside class="notes">Work that starts itself generally follows one of two activation models. Scheduled work runs at a known recurring time, which suits summaries, triage, and health checks. Triggered work reacts to a repository event such as a failed build, a labeled issue, or a documentation change. The next slides show GitHub Copilot products that support these activation patterns.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Background Agents</p>
+					<h2>Automations in GitHub Copilot App</h2>
+					<div class="automation-layout">
+						<figure class="automation-panel create">
+							<figcaption>New automation</figcaption>
+							<div class="automation-shot"><img src="assets/screenshot_copilotapp_new_automation.png" alt="New automation dialog with manual, scheduled, and repository event triggers"></div>
+						</figure>
+						<figure class="automation-panel list">
+							<figcaption>Automations</figcaption>
+							<div class="automation-shot"><img src="assets/screenshot_copilotapp_automations.png" alt="GitHub Copilot App Automations showing agent tasks, schedules, and latest run status"></div>
+						</figure>
+					</div>
+					<aside class="notes">Copilot App Automations package background work as a reusable task with a trigger. An automation can start manually, on an hourly, daily, weekly, or CRON schedule, or from repository events involving issues, discussions, pull requests, and sub-issues. The overview also keeps the project scope and latest run status visible. Define the task once, then let the appropriate schedule or event start it.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Background Agents</p>
+					<h2>Agentic Workflows for GitHub Actions</h2>
+					<div class="agentic-file">
+						<div class="agentic-file-header"><code>issue-triage.md</code><span>One workflow file</span></div>
+						<div class="agentic-workflow-layout">
+							<div class="agentic-workflow-panel">
+								<h3>YAML for guardrails<span>Frontmatter</span></h3>
+							<pre><code class="language-yaml" data-trim>---
+description: Triages new and reopened issues
+on:
+  issues:
+    types: [opened, reopened]
+permissions:
+	contents: read
+	issues: read
+safe-outputs:
+  add-labels:
+    allowed: [bug, feature, question,
+      needs-info, duplicate]
+    max: 4
+  add-comment:
+    max: 1
+timeout-minutes: 10
+---</code></pre>
+							</div>
+							<div class="agentic-workflow-plus" aria-hidden="true">+</div>
+							<div class="agentic-workflow-panel">
+								<h3>Markdown for instructions<span>Body</span></h3>
+							<pre><code class="language-markdown" data-trim># Issue Triage Assistant
+
+Analyze issue #${{ github.event.issue.number }}.
+Base conclusions on repository context.
+Do not invent missing details.
+
+## Gather context
+- Read the issue and comments.
+- Inspect labels and issue types.
+- Search for duplicates.
+
+## Report
+- Apply only supported labels.
+- Post one concise triage comment.</code></pre>
+							</div>
+						</div>
+					</div>
+					<p class="source-note"><a href="https://github.com/githubnext/agentics/blob/main/workflows/issue-triage.md" target="_blank" rel="noopener noreferrer">&#x1F517; Example: issue-triage.md</a> &nbsp; <a href="https://github.github.com/gh-aw/" target="_blank" rel="noopener noreferrer">&#x1F517; Agentic Workflows documentation</a></p>
+					<aside class="notes">An Agentic Workflow is a single Markdown file used with GitHub Actions. YAML frontmatter defines the guardrails: the issue event, read permissions, approved labels, one allowed comment, and a ten-minute timeout. The Markdown body tells the agent how to gather context, avoid unsupported conclusions, and report its findings. Both parts live together in issue-triage.md, so the instructions and their execution boundaries can be reviewed as one workflow definition.</aside>
+				</section>
+
+				<section class="heading-only">
+					<p class="kicker">Ownership</p>
+					<h2>Who should do the work?</h2>
+					<p>The amount of supervision a task needs determines how it should be delegated.</p>
+				</section>
+
+				<section>
+					<p class="kicker">Supervision spectrum</p>
+					<h2>Match autonomy to uncertainty</h2>
+					<div class="scale">
+						<div><h3>Developer-led</h3><p>Ambiguous requirements, architecture, UX, high risk.</p></div>
+						<div><h3>Light supervision</h3><p>Clear feature, occasional decisions, inspectable preview.</p></div>
+						<div><h3>Hands-off</h3><p>Bounded task with reliable automated validation.</p></div>
+						<div><h3>Automated</h3><p>Repeatable work with guarded, reviewable outputs.</p></div>
+					</div>
+					<p class="lead">As ambiguity and blast radius rise, human attention should rise with them.</p>
+				</section>
+
+				<section>
+					<p class="kicker">Human involvement</p>
+					<h2>Where is the human in the loop?</h2>
+					<div class="human-loop">
+						<div class="human-stage" style="--stage-color: var(--coral)"><p class="stage-name">Plan</p><span class="stage-marker"></span><div class="human-action"><strong>Edit the plan</strong><span>Set direction and constraints</span></div></div>
+						<div class="human-stage" style="--stage-color: var(--yellow)"><p class="stage-name">Build</p><span class="stage-marker"></span><div class="human-action"><strong>Edit code</strong><span>Implement alongside the agent</span></div></div>
+						<div class="human-stage" style="--stage-color: var(--blue)"><p class="stage-name">Review</p><span class="stage-marker"></span><div class="human-action"><strong>Review code</strong><span>Inspect and request changes</span></div></div>
+						<div class="human-stage" style="--stage-color: var(--lime)"><p class="stage-name">Deploy</p><span class="stage-marker"></span><div class="human-action"><strong>Approve</strong><span>Handle exceptions</span></div></div>
+					</div>
+					<p class="lead">The human involvement needed at each stage shapes your approach.</p>
+				</section>
+
+				<section>
+					<p class="kicker">Subagents</p>
+					<h2>An agent can delegate work to subagents</h2>
+					<div class="subagent-flow">
+						<div class="subagent-stage delegate"><span class="step">1 &middot; PARENT AGENT</span><strong>Delegate</strong><span>Split one goal into bounded tasks.</span></div>
+						<div class="subagent-flow-arrow">&rarr;</div>
+						<div class="subagent-parallel">
+							<strong>2 &middot; WORK IN PARALLEL</strong>
+							<div class="subagent-workers">
+								<div class="subagent-worker">SUBAGENT 1</div>
+								<div class="subagent-worker">SUBAGENT 2</div>
+								<div class="subagent-worker">SUBAGENT 3</div>
+							</div>
+						</div>
+						<div class="subagent-flow-arrow">&rarr;</div>
+						<div class="subagent-stage integrate"><span class="step">3 &middot; PARENT AGENT</span><strong>Integrate</strong><span>Check results and combine one outcome.</span></div>
+					</div>
+					<p class="subagent-result">Subagents return focused results. The parent still owns the final answer.</p>
+					<aside class="notes">A subagent is a focused helper created by a parent agent for a bounded task. The parent starts with one goal, delegates independent tasks to subagents, and lets those tasks run in parallel. Each subagent returns findings, changes, or validation results. The parent checks those results, resolves conflicts, and integrates one final outcome. Delegation adds parallelism; it does not transfer final responsibility away from the parent.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Subagents</p>
+					<h2>Invoke subagents with commands or prompts</h2>
+					<div class="subagent-entry-paths">
+						<div class="subagent-entry built-in">
+							<span class="tag">COPILOT APP + CLI</span>
+							<code class="subagent-command">/review</code>
+							<p>A built-in command can delegate review concerns to subagents and combine their findings.</p>
+							<div class="subagent-command-flow"><span>CODE CHANGE</span><b>&rarr;</b><span>PARALLEL REVIEWERS</span><b>&rarr;</b><span>ONE REVIEW</span></div>
+						</div>
+						<div class="subagent-entry prompted">
+							<span class="tag">YOUR PROMPT</span>
+							<pre><code class="language-text" data-trim>Review this change with subagents.
+
+Run independent reviews for:
+- correctness and edge cases
+- tests and coverage
+- security and performance
+
+Return one prioritized report.</code></pre>
+						</div>
+					</div>
+					<p class="subagent-entry-claim">Use a built-in operation, or ask the parent agent to delegate explicitly.</p>
+					<aside class="notes">You do not always need to orchestrate subagents yourself. In Copilot App and Copilot CLI, built-in commands such as slash review can use subagents to inspect different concerns in parallel and consolidate the findings. You can also ask for delegation explicitly in the prompt: name independent review concerns, request parallel work, and ask the parent agent to return one prioritized report. In both cases, you interact with the parent agent rather than managing each subagent individually.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Subagents</p>
+					<h2>Delegated work can cross sessions and repositories</h2>
+					<div class="delegation-map">
+						<div class="delegation-parent">
+							<span class="tag">PARENT SESSION</span>
+							<h3>web-app</h3>
+							<p>Owns the overall goal and integrates the results.</p>
+						</div>
+						<div class="delegation-arrow">&rarr;</div>
+						<div class="delegation-workers">
+							<div class="delegation-worker same"><span class="session-kind">SAME SESSION</span><strong>web-app</strong><span>Inspect the frontend</span></div>
+							<div class="delegation-worker new"><span class="session-kind">NEW SESSION</span><strong>auth-sdk</strong><span>Update the package</span></div>
+							<div class="delegation-worker new"><span class="session-kind">NEW SESSION</span><strong>docs</strong><span>Update the guide</span></div>
+						</div>
+					</div>
+					<p class="delegation-claim">The parent coordinates the goal; delegated workers can own separate context, execution, and repositories.</p>
+					<aside class="notes">Delegation does not have to stay inside one context or repository. A parent session can ask a subagent to inspect work within the current session, or start delegated work in a separate session with its own context. That new session can target another repository, such as a shared SDK or documentation project. The parent remains responsible for coordinating the overall goal and integrating the returned results. This diagram is intentionally generic and can later be replaced with product screenshots.</aside>
+				</section>
+
+				<section class="heading-only">
+					<h2>Wrapping up</h2>
+					<aside class="notes">Signal the transition from the main body of the talk into the final takeaway.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">All together now</p>
+					<h2>Ready, set, parallel!</h2>
+					<div class="recap-formula">
+						<div class="recap-system">
+							<div class="recap-attributes">
+								<div class="recap-attribute bounded"><strong>BOUNDED WORK</strong><span>Clear scope and finish line</span></div>
+								<div class="recap-attribute isolated"><strong>ISOLATION</strong><span>Separate workspace and state</span></div>
+								<div class="recap-attribute visible"><strong>VISIBILITY</strong><span>Observable progress and results</span></div>
+							</div>
+							<div class="recap-lanes" aria-hidden="true">
+								<div class="recap-lane" style="--packet-color: var(--coral); --delay: 0s;"><div class="recap-motion"><span class="recap-node"><img src="assets/Copilot_Icon_Black.svg" alt=""></span><span class="recap-track"><i class="recap-packet"></i></span><span class="recap-end"></span></div></div>
+								<div class="recap-lane" style="--packet-color: var(--blue); --delay: 0.22s;"><div class="recap-motion"><span class="recap-node"><img src="assets/Copilot_Icon_Black.svg" alt=""></span><span class="recap-track"><i class="recap-packet"></i></span><span class="recap-end"></span></div></div>
+								<div class="recap-lane" style="--packet-color: var(--yellow); --delay: 0.44s;"><div class="recap-motion"><span class="recap-node"><img src="assets/Copilot_Icon_Black.svg" alt=""></span><span class="recap-track"><i class="recap-packet"></i></span><span class="recap-end"></span></div></div>
+							</div>
+						</div>
+					</div>
+					<p class="recap-formula-note">Bound the work, isolate execution, and make progress visible.</p>
+					<aside class="notes">Agent count is not the goal. Useful parallelism comes from bounded work, isolated execution, and visible progress. The closing rule is practical: start more concurrent work only when you can isolate it, observe it, and integrate it.</aside>
+				</section>
+
+				<section>
+					<p class="kicker">Thank you</p>
+					<h2>Questions?</h2>
+					<div class="questions-layout">
+						<table class="about-links">
+							<tbody>
+								<tr><td>Twitter</td><td><a href="https://twitter.com/pamelafox" target="_blank" rel="noopener noreferrer">&#x1F517; @pamelafox</a></td></tr>
+								<tr><td>LinkedIn</td><td><a href="https://www.linkedin.com/in/pamela-s-fox/" target="_blank" rel="noopener noreferrer">&#x1F517; linkedin.com/in/pamela-s-fox</a></td></tr>
+								<tr><td>GitHub</td><td><a href="https://github.com/pamelafox" target="_blank" rel="noopener noreferrer">&#x1F517; github.com/pamelafox</a></td></tr>
+								<tr><td>Website</td><td><a href="https://pamelafox.org" target="_blank" rel="noopener noreferrer">&#x1F517; pamelafox.org</a></td></tr>
+							</tbody>
+						</table>
+						<div class="card slides-card"><span class="tag">SLIDES</span><p><strong><a href="https://pamelafox.github.io/parallelize-development-github-copilot/" target="_blank" rel="noopener noreferrer">&#x1F517; pamelafox.github.io/parallelize-development-github-copilot</a></strong></p></div>
+					</div>
+				</section>
+
+			</div>
+		</div>
+
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/plugin/highlight/highlight.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js-menu@2.1.0/menu.js"></script>
+		<script>
+			Reveal.initialize({
+				width: 1280,
+				height: 720,
+				hash: true,
+				center: false,
+				slideNumber: true,
+				progress: true,
+				showNotes: false,
+				margin: 0,
+				preloadIframes: true,
+				autoPlayMedia: true,
+				plugins: [RevealHighlight, RevealMenu],
+				pdfSeparateFragments: true
+			});
+		</script>
+	</body>
+</html>
