@@ -310,9 +310,13 @@
 		.setup-script pre { margin: 0; box-shadow: none; }
 		.setup-script pre code { font-size: 0.46em; line-height: 1.35; }
 		.technique-example { grid-template-columns: 0.88fr 1.22fr; }
-		.technique-instructions ul { margin: 0; padding-left: 1.15em; font-size: 0.62em; line-height: 1.42; }
-		.technique-instructions li + li { margin-top: 10px; }
+		.technique-example .tag { font-size: 0.46em; }
+		.technique-wrapper { background: #dbe5ff; }
+		.technique-wrapper pre { margin: 0; box-shadow: none; }
+		.technique-wrapper pre code { font-size: 0.4em; line-height: 1.32; }
+		.technique-wrapper p { margin: 14px 0 0; font-size: 0.48em; line-height: 1.35; }
 		.technique-code pre code { font-size: 0.5em; line-height: 1.38; }
+		.technique-code p { margin: 18px 0 0; font-size: 0.48em; line-height: 1.35; }
 		.skill-example { grid-template-columns: 0.95fr 1.15fr; }
 		.skill-example .setup-prompt p { font-size: 0.68em; }
 		.skill-discovery h3 { margin: 0 0 14px; font-size: 0.82em; }
@@ -320,6 +324,10 @@
 		.skill-file { display: grid; grid-template-columns: 130px 1fr; gap: 14px; align-items: center; padding: 11px 0; border-top: 2px solid var(--ink); }
 		.skill-file strong { font-family: 'IBM Plex Mono', monospace; font-size: 0.5em; }
 		.skill-file span { font-size: 0.48em; line-height: 1.3; }
+		.skill-snippet { padding: 12px 14px; }
+		.skill-snippet .tag { margin-bottom: 8px; }
+		.reveal .skill-snippet pre { padding: 8px 10px; }
+		.skill-snippet pre code { padding: 0; font-size: 0.4em; line-height: 1.28; }
 		.port-prerequisite { display: grid; grid-template-columns: 180px 1fr; align-items: stretch; margin-top: 22px; border: 3px solid var(--ink); background: var(--lime); }
 		.port-prerequisite > strong { display: flex; align-items: center; justify-content: center; padding: 15px; background: var(--ink); color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 0.42em; }
 		.port-prerequisite div { padding: 14px 20px; }
@@ -832,52 +840,58 @@ fi</code></pre>
 
 				<section>
 					<p class="kicker">Agent isolation</p>
-					<h2>Isolate Azure CLI state for each agent</h2>
-					<p class="setup-intro"><code>az</code> and <code>azd</code> normally share user-level configuration and authentication state.</p>
+					<h2>Example: Give each agent separate Azure settings</h2>
+					<p class="setup-intro">Environment variables point Azure&rsquo;s command-line tools, <code>az</code> and <code>azd</code>, to separate configuration and authentication.</p>
 					<div class="worktree-setup-example technique-example">
-						<div class="setup-prompt technique-instructions">
-							<span class="tag">AGENT INSTRUCTIONS</span>
-							<ul>
-								<li>Choose a distinct profile for each concurrent session.</li>
-								<li>Run every <code>az</code> and <code>azd</code> command through the wrapper.</li>
-								<li>Confirm the tenant and subscription before operating.</li>
-							</ul>
-						</div>
-						<div class="setup-script technique-code">
-							<span class="tag">PYTHON WRAPPER</span>
+						<div class="setup-prompt technique-wrapper">
+							<span class="tag">HELPER SCRIPT: az-azd.py</span>
 							<pre><code class="language-python" data-trim>child_env = os.environ.copy()
-
-for name in tuple(child_env):
-	if name.upper().startswith(("AZURE_", "AZD_")):
-		child_env.pop(name)
-
+# ...remove inherited AZURE_* and AZD_* settings...
 child_env["AZURE_CONFIG_DIR"] = str(paths.azure_config_dir)
 child_env["AZD_CONFIG_DIR"] = str(paths.azd_config_dir)
 child_env["AZURE_ENV_NAME"] = environment</code></pre>
+							<p>Clears inherited Azure settings, then gives the agent separate CLI configuration and a deployment environment.</p>
+						</div>
+						<div class="setup-script technique-code">
+							<span class="tag">WHAT AGENT RUNS</span>
+							<pre><code class="language-bash" data-trim>python3 ./az-azd.py \
+  --profile contoso-feature-a \
+  --tenant contoso.onmicrosoft.com \
+  --environment feature-a \
+  azd deploy</code></pre>
+							<p>The agent invokes <code>az-azd.py</code> before running the standard deployment command, <code>azd deploy</code>.</p>
 						</div>
 					</div>
-					<aside class="notes">The technique combines behavioral instructions with deterministic code. The instructions require each concurrent agent to choose a distinct profile and verify its Azure context. The Python wrapper removes inherited Azure context, then points Azure CLI and Azure Developer CLI at separate configuration directories and an isolated azd environment. This separates cached authentication and mutable CLI state; it is configuration isolation, not a security sandbox.</aside>
+					<aside class="notes">This is an Azure example of a broader problem: many command-line tools remember identity and configuration at the user level. Azure CLI, called az, manages Azure resources. Azure Developer CLI, called azd, provisions and deploys application environments. If concurrent agents inherit the same defaults, one can silently change the target for another. Here the agent runs the deployment through az-azd.py, passing a distinct profile, tenant, and environment before the actual azd deploy command. The wrapper assigns separate configuration directories and the requested environment, then launches azd. This is configuration isolation, not a security sandbox.</aside>
 				</section>
 
 				<section>
 					<p class="kicker">Agent isolation</p>
-					<h2>Turn the technique into an agent skill</h2>
-					<p class="setup-intro">An agent skill packages reusable instructions and resources that Copilot can discover for a task.</p>
+					<h2>Package the technique as a reusable agent skill</h2>
+					<p class="setup-intro">A skill lets Copilot discover and reuse the same isolation setup in future tasks.</p>
 					<div class="worktree-setup-example skill-example">
-						<div class="setup-prompt skill-discovery">
-							<span class="tag">DISCOVERY</span>
-							<h3><code>name: az-azd</code></h3>
-							<p>The description tells Copilot when to load the skill: Azure CLI tasks that need isolated configuration and authentication state.</p>
-						</div>
-						<div class="setup-script skill-package">
+						<div class="setup-prompt skill-package">
 							<span class="tag">SKILL PACKAGE</span>
 							<h3>.github/skills/az-azd/</h3>
 							<div class="skill-file"><strong>SKILL.md</strong><span>Discovery metadata and operating instructions</span></div>
-							<div class="skill-file"><strong>az-azd.py</strong><span>Separate Azure CLI configuration and authentication profiles</span></div>
+							<div class="skill-file"><strong>az-azd.py</strong><span>Assign separate Azure settings to each agent</span></div>
+						</div>
+						<div class="setup-script skill-snippet">
+							<span class="tag">SKILL.md</span>
+							<pre><code class="language-markdown" data-trim>---
+name: az-azd
+description: Use for Azure CLI (az) or Azure Developer CLI
+  (azd) commands that need isolated configuration and
+  authentication across projects and agent sessions.
+---
+
+# Isolated Azure CLI sessions
+
+Run commands through the adjacent `az-azd.py` wrapper.</code></pre>
 						</div>
 					</div>
 					<p class="source-note"><a href="https://github.com/mattgotteiner/skills" target="_blank" rel="noopener noreferrer">&#x1F517; Example: az-azd agent skill</a></p>
-					<aside class="notes">Once the technique works, package it as an agent skill so it can be reused across sessions. A skill's name and description help Copilot discover it for a matching task. SKILL.md provides the operating instructions, and companion scripts provide deterministic behavior. Project skills live under .github/skills; personal skills can live under the user's Copilot skills directory.</aside>
+					<aside class="notes">Once the technique works, package it as an agent skill so it can be reused across sessions. The package keeps SKILL.md beside the helper script. The name and description in SKILL.md tell Copilot when to discover the skill, while the body instructs the agent to run Azure commands through az-azd.py. Project skills live under .github/skills; personal skills can live under the user's Copilot skills directory.</aside>
 				</section>
 
 				<section class="heading-only">
